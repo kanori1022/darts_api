@@ -1,0 +1,40 @@
+services:
+  db:
+    image: mysql:8.0.42
+    ports:
+      - "3306:3306"
+    volumes:
+      #mysql.cnfを反映させるためのディレクトリ
+      - ./mysql/conf.d:/etc/mysql/conf.d #DBの実体を残したい場合にはコメントアウトを外す
+      - ./mysql/data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_HOST: ${MYSQL_HOST}
+    env_file:
+      - .env
+  api:
+    # コンテナ名の指定
+    container_name: darts-api
+    # Dockerfileのあるディレクトリのパス
+    build: .
+    command: /bin/bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 8000 -b '0.0.0.0'"
+    tty: true # コンテナの永続化
+    environment:
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_DATABASE_TEST: ${MYSQL_DATABASE_TEST}
+      MYSQL_HOST: ${MYSQL_HOST}
+      MYSQL_PORT: ${MYSQL_PORT}
+    env_file:
+      - .env
+    # データの永続化（ホスト側のカレントディレクトリにマウントする）
+    volumes:
+      - .:/api
+    # ポートの指定（外部からのアクセス時のポート：Dockerコンテナからアクセス時のポート）
+    ports:
+      - "8000:8000"
+    # 依存関係の指定（dbが起動した後に、webが起動するようになる）
+    depends_on:
+      - db
