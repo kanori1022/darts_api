@@ -1,0 +1,15 @@
+local:
+  service: Disk
+  root: <%= Rails.root.join("storage") %>
+
+test:
+  service: Disk
+  root: <%= Rails.root.join("tmp/storage") %>
+
+# `bin/rails credentials:edit`でAWS secretsを設定すること（aws:access_key_id|secret_access_keyとして）
+amazon:
+  service: S3
+  access_key_id: <%= Rails.application.credentials.dig(:aws, :access_key_id) %>
+  secret_access_key: <%= Rails.application.credentials.dig(:aws, :secret_access_key) %>
+  bucket: your_own_bucket-<%= Rails.env %>
+  region: "" # 例: "us-east-1"
