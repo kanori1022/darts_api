@@ -1,9 +1,12 @@
 class CombinationController < ApplicationController
   # GET /combinations
   def index
-    # combination = Combination.find(1)
-    combination = Combination.all
-    render json: combination
+    combinations = Combination.all.with_attached_image
+    render json: combinations.map { |c| 
+      c.as_json.merge(
+        image: c.image.attached? ? url_for(c.image) : nil
+      )
+    }
   end
 
   # POST /combinations
@@ -27,6 +30,6 @@ class CombinationController < ApplicationController
 
   # 受け付けるパラメータを指定
   def combination_params
-    params.require(:combination).permit(:title, :flight, :shaft, :barrel, :tip, :description)
+    params.require(:combination).permit(:title, :image, :flight, :shaft, :barrel, :tip, :description)
   end
 end
