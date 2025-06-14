@@ -1,7 +1,8 @@
 class CombinationController < ApplicationController
   # GET /combinations
   def index
-    combination = Combination.find(1)
+    # combination = Combination.find(1)
+    combination = Combination.all
     render json: combination
   end
 
