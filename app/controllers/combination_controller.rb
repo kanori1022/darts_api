@@ -26,6 +26,15 @@ class CombinationController < ApplicationController
     end
   end
 
+  def show
+    combination = Combination.find(params[:id])
+    render json: combination.as_json.merge(
+      image: combination.image.attached? ? url_for(combination.image) : nil
+    )
+  end
+
+
+  
   private
 
   # 受け付けるパラメータを指定
