@@ -13,11 +13,3 @@ Rails.application.routes.draw do
   # root "posts#index"
 
 end
-
-
-# -------------------------------------|
-# あったわw                             |
-# ここに↓w                              |
-# https://railsguides.jp/routing.html  |
-# ↑これなw                              |
-# -------------------------------------|

@@ -32,8 +32,6 @@ class CombinationController < ApplicationController
       image: combination.image.attached? ? url_for(combination.image) : nil
     )
   end
-
-
   
   private
 
@@ -42,3 +40,4 @@ class CombinationController < ApplicationController
     params.require(:combination).permit(:title, :image, :flight, :shaft, :barrel, :tip, :description)
   end
 end
+
