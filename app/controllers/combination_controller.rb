@@ -1,4 +1,6 @@
 class CombinationController < ApplicationController
+skip_before_action :authenticate_user, only: [:index,:show]
+
   # GET /combinations
   def index
     combinations = Combination.all.with_attached_image
@@ -13,7 +15,7 @@ class CombinationController < ApplicationController
   def create
     combination = Combination.new(combination_params)
     # user_idを "1" に仮置きしている
-    combination.user_id = 1
+    combination.user_id = @current_user.id
     puts "----------------------------------------------"
     puts "combination.title: #{combination.title}"
     puts "combination.user_id: #{combination.user_id}"
