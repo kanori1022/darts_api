@@ -11,6 +11,8 @@ skip_before_action :authenticate_user, only: [:index,:show]
     }
   end
 
+  # AxiosError: Request failed with status code 500
+
   # POST /combinations
   def create
     combination = Combination.new(combination_params)
