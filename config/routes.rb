@@ -7,6 +7,9 @@ Rails.application.routes.draw do
 
   post "/combinations", to: "combination#create"
   post "/users", to: "user#create"
-  get "up" => "rails/health#show", as: :rails_health_check
 
+  put "/users", to: "user#update"
+  get "/users", to: "user#show"
+
+  get "up" => "rails/health#show", as: :rails_health_check
 end
