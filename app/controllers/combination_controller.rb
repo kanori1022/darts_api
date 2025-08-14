@@ -1,15 +1,25 @@
 class CombinationController < ApplicationController
-skip_before_action :authenticate_user, only: [:index,:show]
+skip_before_action :authenticate_user, only: [:index, :show]
 
-  # GET /combinations
-  def index
-    combinations = Combination.all.with_attached_image
-    render json: combinations.map { |c| 
-      c.as_json.merge(
-        image: c.image.attached? ? url_for(c.image) : nil
-      )
-    }
-  end
+# GET /combinations
+def index
+  combinations =
+    case params[:sort]
+    when "popular"
+      Combination.order(favorites_count: :desc)
+    else # デフォルトは新着順
+      Combination.order(created_at: :desc)
+    end
+
+  combinations = combinations.with_attached_image
+
+  render json: combinations.map { |c|
+    c.as_json.merge(
+      image: c.image.attached? ? url_for(c.image) : nil
+    )
+  }
+end
+
 
   # AxiosError: Request failed with status code 500
 
@@ -36,7 +46,7 @@ skip_before_action :authenticate_user, only: [:index,:show]
       image: combination.image.attached? ? url_for(combination.image) : nil
     )
   end
-  
+
   private
 
   # 受け付けるパラメータを指定
@@ -44,4 +54,3 @@ skip_before_action :authenticate_user, only: [:index,:show]
     params.require(:combination).permit(:title, :image, :flight, :shaft, :barrel, :tip, :description)
   end
 end
-
