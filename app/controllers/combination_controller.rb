@@ -1,15 +1,30 @@
 class CombinationController < ApplicationController
-skip_before_action :authenticate_user, only: [:index,:show]
+skip_before_action :authenticate_user, only: [:index, :show, :newest]
 
-  # GET /combinations
-  def index
-    combinations = Combination.all.with_attached_image
-    render json: combinations.map { |c| 
-      c.as_json.merge(
-        image: c.image.attached? ? url_for(c.image) : nil
-      )
-    }
-  end
+# GET /combinations (人気順)
+def index
+  combinations = Combination.joins("LEFT JOIN favorites ON favorites.combination_id = combinations.id")
+                            .group("combinations.id")
+                            .order("COUNT(favorites.id) DESC")
+                            .with_attached_image
+
+  render json: combinations.map { |c|
+    c.as_json.merge(
+      image: c.image.attached? ? url_for(c.image) : nil
+    )
+  }
+end
+
+# GET /combinations/newest
+def newest
+  combinations = Combination.order(created_at: :desc).with_attached_image
+
+  render json: combinations.map { |c|
+    c.as_json.merge(
+      image: c.image.attached? ? url_for(c.image) : nil
+    )
+  }
+end
 
   # AxiosError: Request failed with status code 500
 
@@ -36,7 +51,7 @@ skip_before_action :authenticate_user, only: [:index,:show]
       image: combination.image.attached? ? url_for(combination.image) : nil
     )
   end
-  
+
   private
 
   # 受け付けるパラメータを指定
@@ -44,4 +59,3 @@ skip_before_action :authenticate_user, only: [:index,:show]
     params.require(:combination).permit(:title, :image, :flight, :shaft, :barrel, :tip, :description)
   end
 end
-

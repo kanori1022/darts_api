@@ -1,6 +1,7 @@
 Rails.application.routes.draw do
   # get "combination/index"
   get "/combinations", to: "combination#index"
+  get "/combinations/newest", to: "combination#newest"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   get "/combinations/:id", to: "combination#show"

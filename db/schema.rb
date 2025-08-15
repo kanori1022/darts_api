@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_14_092152) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_14_084104) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -49,7 +49,17 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_14_092152) do
     t.text "description"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.integer "favorites_count"
     t.index ["user_id"], name: "index_combinations_on_user_id"
+  end
+
+  create_table "favorites", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "combination_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["combination_id"], name: "index_favorites_on_combination_id"
+    t.index ["user_id"], name: "index_favorites_on_user_id"
   end
 
   create_table "users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
@@ -62,4 +72,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_14_092152) do
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "combinations", "users"
+  add_foreign_key "favorites", "combinations"
+  add_foreign_key "favorites", "users"
 end
