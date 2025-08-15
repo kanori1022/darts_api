@@ -1,17 +1,12 @@
 class CombinationController < ApplicationController
-skip_before_action :authenticate_user, only: [:index, :show]
+skip_before_action :authenticate_user, only: [:index, :show, :newest]
 
-# GET /combinations
+# GET /combinations (人気順)
 def index
-  combinations =
-    case params[:sort]
-    when "popular"
-      Combination.order(favorites_count: :desc)
-    else # デフォルトは新着順
-      Combination.order(created_at: :desc)
-    end
-
-  combinations = combinations.with_attached_image
+  combinations = Combination.joins("LEFT JOIN favorites ON favorites.combination_id = combinations.id")
+                            .group("combinations.id")
+                            .order("COUNT(favorites.id) DESC")
+                            .with_attached_image
 
   render json: combinations.map { |c|
     c.as_json.merge(
@@ -20,6 +15,16 @@ def index
   }
 end
 
+# GET /combinations/newest
+def newest
+  combinations = Combination.order(created_at: :desc).with_attached_image
+
+  render json: combinations.map { |c|
+    c.as_json.merge(
+      image: c.image.attached? ? url_for(c.image) : nil
+    )
+  }
+end
 
   # AxiosError: Request failed with status code 500
 
