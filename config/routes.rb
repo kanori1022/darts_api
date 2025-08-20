@@ -3,6 +3,7 @@ Rails.application.routes.draw do
   get "/combinations", to: "combination#index"
   get "/combinations/newest", to: "combination#newest"
   get "/combinations/search", to: "combination#search"
+  get "/combinations/my_posts", to: "combination#my_posts"
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   get "/combinations/:id", to: "combination#show"
