@@ -7,6 +7,7 @@ Rails.application.routes.draw do
   # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
   get "/combinations/:id", to: "combination#show"
+  put "/combinations/:id", to: "combination#update"
 
   post "/combinations", to: "combination#create"
   post "/users", to: "user#create"

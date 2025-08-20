@@ -187,6 +187,25 @@ end
     )
   end
 
+  # PUT /combinations/:id - 投稿を更新
+  def update
+    combination = Combination.find(params[:id])
+
+    # 自分の投稿かチェック
+    if combination.user_id != @current_user.id
+      render json: { error: "自分の投稿のみ編集できます" }, status: :forbidden
+      return
+    end
+
+    if combination.update(combination_params)
+      render json: combination.as_json.merge(
+        image: combination.image.attached? ? url_for(combination.image) : nil
+      )
+    else
+      render json: combination.errors, status: :unprocessable_entity
+    end
+  end
+
   private
 
   # 受け付けるパラメータを指定
