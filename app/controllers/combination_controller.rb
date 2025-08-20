@@ -3,26 +3,68 @@ skip_before_action :authenticate_user, only: [:index, :show, :newest, :search]
 
 # GET /combinations (人気順)
 def index
+  limit = (params[:limit] || 10).to_i
+  offset = (params[:offset] || 0).to_i
+
   combinations = Combination.joins("LEFT JOIN favorites ON favorites.combination_id = combinations.id")
                             .group("combinations.id")
                             .order("COUNT(favorites.id) DESC")
                             .with_attached_image
 
-  render json: combinations.map { |c|
-    c.as_json.merge(
-      image: c.image.attached? ? url_for(c.image) : nil
-    )
+  # 総件数を取得（ページネーション用）- GROUP BY句がある場合は別途取得
+  total_count = Combination.count
+
+  # limitとoffsetを適用
+  combinations = combinations.limit(limit).offset(offset)
+
+  # 現在のページと総ページ数を計算
+  current_page = (offset / limit) + 1
+  total_pages = (total_count.to_f / limit).ceil
+
+  render json: {
+    combinations: combinations.map { |c|
+      c.as_json.merge(
+        image: c.image.attached? ? url_for(c.image) : nil
+      )
+    },
+    pagination: {
+      current_page: current_page,
+      per_page: limit,
+      total_count: total_count,
+      total_pages: total_pages
+    }
   }
 end
 
 # GET /combinations/newest
 def newest
+  limit = (params[:limit] || 10).to_i
+  offset = (params[:offset] || 0).to_i
+
   combinations = Combination.order(created_at: :desc).with_attached_image
 
-  render json: combinations.map { |c|
-    c.as_json.merge(
-      image: c.image.attached? ? url_for(c.image) : nil
-    )
+  # 総件数を取得（ページネーション用）
+  total_count = combinations.count
+
+  # limitとoffsetを適用
+  combinations = combinations.limit(limit).offset(offset)
+
+  # 現在のページと総ページ数を計算
+  current_page = (offset / limit) + 1
+  total_pages = (total_count.to_f / limit).ceil
+
+  render json: {
+    combinations: combinations.map { |c|
+      c.as_json.merge(
+        image: c.image.attached? ? url_for(c.image) : nil
+      )
+    },
+    pagination: {
+      current_page: current_page,
+      per_page: limit,
+      total_count: total_count,
+      total_pages: total_pages
+    }
   }
 end
 
@@ -30,6 +72,8 @@ end
 def search
   search_word = params[:searchWord] || ""
   tags = params[:tags] || ""
+  limit = (params[:limit] || 10).to_i
+  offset = (params[:offset] || 0).to_i
 
   combinations = Combination.all.with_attached_image
 
@@ -49,10 +93,38 @@ def search
                             .group("combinations.id")
                             .order("COUNT(favorites.id) DESC")
 
-  render json: combinations.map { |c|
-    c.as_json.merge(
-      image: c.image.attached? ? url_for(c.image) : nil
+  # 総件数を取得（ページネーション用）- GROUP BY句がある場合は別途取得
+  base_combinations = Combination.all
+  if search_word.present?
+    base_combinations = base_combinations.where(
+      "title LIKE ? OR description LIKE ? OR flight LIKE ? OR shaft LIKE ? OR barrel LIKE ? OR tip LIKE ?",
+      "%#{search_word}%", "%#{search_word}%", "%#{search_word}%", "%#{search_word}%", "%#{search_word}%", "%#{search_word}%"
     )
+  end
+  if tags.present?
+    base_combinations = base_combinations.where("description LIKE ?", "%#{tags}%")
+  end
+  total_count = base_combinations.count
+
+  # limitとoffsetを適用
+  combinations = combinations.limit(limit).offset(offset)
+
+  # 現在のページと総ページ数を計算
+  current_page = (offset / limit) + 1
+  total_pages = (total_count.to_f / limit).ceil
+
+  render json: {
+    combinations: combinations.map { |c|
+      c.as_json.merge(
+        image: c.image.attached? ? url_for(c.image) : nil
+      )
+    },
+    pagination: {
+      current_page: current_page,
+      per_page: limit,
+      total_count: total_count,
+      total_pages: total_pages
+    }
   }
 end
 
