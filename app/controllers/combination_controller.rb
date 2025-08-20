@@ -68,6 +68,39 @@ def newest
   }
 end
 
+# GET /combinations/my_posts - 自分の投稿を取得
+def my_posts
+  limit = (params[:limit] || 10).to_i
+  offset = (params[:offset] || 0).to_i
+
+  # 現在のユーザーの投稿のみを取得
+  combinations = @current_user.combinations.order(created_at: :desc).with_attached_image
+
+  # 総件数を取得（ページネーション用）
+  total_count = combinations.count
+
+  # limitとoffsetを適用
+  combinations = combinations.limit(limit).offset(offset)
+
+  # 現在のページと総ページ数を計算
+  current_page = (offset / limit) + 1
+  total_pages = (total_count.to_f / limit).ceil
+
+  render json: {
+    combinations: combinations.map { |c|
+      c.as_json.merge(
+        image: c.image.attached? ? url_for(c.image) : nil
+      )
+    },
+    pagination: {
+      current_page: current_page,
+      per_page: limit,
+      total_count: total_count,
+      total_pages: total_pages
+    }
+  }
+end
+
 # GET /combinations/search - 検索機能
 def search
   search_word = params[:searchWord] || ""
