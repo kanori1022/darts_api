@@ -24,7 +24,8 @@ def index
   render json: {
     combinations: combinations.map { |c|
       c.as_json.merge(
-        image: c.image.attached? ? url_for(c.image) : nil
+        image: c.image.attached? ? url_for(c.image) : nil,
+        tags: c.tag_names
       )
     },
     pagination: {
@@ -56,7 +57,8 @@ def newest
   render json: {
     combinations: combinations.map { |c|
       c.as_json.merge(
-        image: c.image.attached? ? url_for(c.image) : nil
+        image: c.image.attached? ? url_for(c.image) : nil,
+        tags: c.tag_names
       )
     },
     pagination: {
@@ -89,7 +91,8 @@ def my_posts
   render json: {
     combinations: combinations.map { |c|
       c.as_json.merge(
-        image: c.image.attached? ? url_for(c.image) : nil
+        image: c.image.attached? ? url_for(c.image) : nil,
+        tags: c.tag_names
       )
     },
     pagination: {
@@ -110,15 +113,14 @@ def search
 
   combinations = Combination.all.with_attached_image
 
+  # キーワード検索
   if search_word.present?
-    combinations = combinations.where(
-      "title LIKE ? OR description LIKE ? OR flight LIKE ? OR shaft LIKE ? OR barrel LIKE ? OR tip LIKE ?",
-      "%#{search_word}%", "%#{search_word}%", "%#{search_word}%", "%#{search_word}%", "%#{search_word}%", "%#{search_word}%"
-    )
+    combinations = combinations.search_by_keyword(search_word)
   end
 
+  # タグ検索
   if tags.present?
-    combinations = combinations.where("description LIKE ?", "%#{tags}%")
+    combinations = combinations.search_by_tags(tags)
   end
 
   # 人気順でソート
@@ -129,13 +131,10 @@ def search
   # 総件数を取得（ページネーション用）- GROUP BY句がある場合は別途取得
   base_combinations = Combination.all
   if search_word.present?
-    base_combinations = base_combinations.where(
-      "title LIKE ? OR description LIKE ? OR flight LIKE ? OR shaft LIKE ? OR barrel LIKE ? OR tip LIKE ?",
-      "%#{search_word}%", "%#{search_word}%", "%#{search_word}%", "%#{search_word}%", "%#{search_word}%", "%#{search_word}%"
-    )
+    base_combinations = base_combinations.search_by_keyword(search_word)
   end
   if tags.present?
-    base_combinations = base_combinations.where("description LIKE ?", "%#{tags}%")
+    base_combinations = base_combinations.search_by_tags(tags)
   end
   total_count = base_combinations.count
 
@@ -149,7 +148,8 @@ def search
   render json: {
     combinations: combinations.map { |c|
       c.as_json.merge(
-        image: c.image.attached? ? url_for(c.image) : nil
+        image: c.image.attached? ? url_for(c.image) : nil,
+        tags: c.tag_names
       )
     },
     pagination: {
@@ -165,16 +165,25 @@ end
 
   # POST /combinations
   def create
-    combination = Combination.new(combination_params)
-    # user_idを "1" に仮置きしている
+    combination = Combination.new(combination_params.except(:tags))
     combination.user_id = @current_user.id
+
     puts "----------------------------------------------"
     puts "combination.title: #{combination.title}"
     puts "combination.user_id: #{combination.user_id}"
+    puts "tags: #{params[:combination][:tags]}"
     puts "----------------------------------------------"
-    # combination.save
+
     if combination.save
-      render json: combination, status: :created
+      # タグを設定
+      if params[:combination][:tags].present?
+        combination.tag_names = params[:combination][:tags]
+      end
+
+      render json: combination.as_json.merge(
+        image: combination.image.attached? ? url_for(combination.image) : nil,
+        tags: combination.tag_names
+      ), status: :created
     else
       render json: combination.errors, status: :unprocessable_entity
     end
@@ -183,7 +192,8 @@ end
   def show
     combination = Combination.find(params[:id])
     render json: combination.as_json.merge(
-      image: combination.image.attached? ? url_for(combination.image) : nil
+      image: combination.image.attached? ? url_for(combination.image) : nil,
+      tags: combination.tag_names
     )
   end
 
@@ -197,9 +207,15 @@ end
       return
     end
 
-    if combination.update(combination_params)
+    if combination.update(combination_params.except(:tags))
+      # タグを更新
+      if params[:combination][:tags].present?
+        combination.tag_names = params[:combination][:tags]
+      end
+
       render json: combination.as_json.merge(
-        image: combination.image.attached? ? url_for(combination.image) : nil
+        image: combination.image.attached? ? url_for(combination.image) : nil,
+        tags: combination.tag_names
       )
     else
       render json: combination.errors, status: :unprocessable_entity
@@ -210,6 +226,6 @@ end
 
   # 受け付けるパラメータを指定
   def combination_params
-    params.require(:combination).permit(:title, :image, :flight, :shaft, :barrel, :tip, :description)
+    params.require(:combination).permit(:title, :image, :flight, :shaft, :barrel, :tip, :description, tags: {})
   end
 end
