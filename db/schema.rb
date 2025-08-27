@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_08_14_084104) do
+ActiveRecord::Schema[8.0].define(version: 2025_08_27_025554) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -62,6 +62,23 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_14_084104) do
     t.index ["user_id"], name: "index_favorites_on_user_id"
   end
 
+  create_table "taggings", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "tag_id", null: false
+    t.bigint "combination_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["combination_id"], name: "index_taggings_on_combination_id"
+    t.index ["tag_id", "combination_id"], name: "index_taggings_on_tag_id_and_combination_id", unique: true
+    t.index ["tag_id"], name: "index_taggings_on_tag_id"
+  end
+
+  create_table "tags", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["name"], name: "index_tags_on_name", unique: true
+  end
+
   create_table "users", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "firebase_uid"
     t.string "name"
@@ -74,4 +91,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_08_14_084104) do
   add_foreign_key "combinations", "users"
   add_foreign_key "favorites", "combinations"
   add_foreign_key "favorites", "users"
+  add_foreign_key "taggings", "combinations"
+  add_foreign_key "taggings", "tags"
 end
