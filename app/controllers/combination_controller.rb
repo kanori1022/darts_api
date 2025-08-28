@@ -7,6 +7,7 @@ def index
   offset = (params[:offset] || 0).to_i
 
   combinations = Combination.joins("LEFT JOIN favorites ON favorites.combination_id = combinations.id")
+                            .includes(:user)
                             .group("combinations.id")
                             .order("COUNT(favorites.id) DESC")
                             .with_attached_image
@@ -25,7 +26,8 @@ def index
     combinations: combinations.map { |c|
       c.as_json.merge(
         image: c.image.attached? ? url_for(c.image) : nil,
-        tags: c.tag_names
+        tags: c.tag_names,
+        firebase_uid: c.user.firebase_uid
       )
     },
     pagination: {
@@ -42,7 +44,7 @@ def newest
   limit = (params[:limit] || 10).to_i
   offset = (params[:offset] || 0).to_i
 
-  combinations = Combination.order(created_at: :desc).with_attached_image
+  combinations = Combination.includes(:user).order(created_at: :desc).with_attached_image
 
   # 総件数を取得（ページネーション用）
   total_count = combinations.count
@@ -58,7 +60,8 @@ def newest
     combinations: combinations.map { |c|
       c.as_json.merge(
         image: c.image.attached? ? url_for(c.image) : nil,
-        tags: c.tag_names
+        tags: c.tag_names,
+        firebase_uid: c.user.firebase_uid
       )
     },
     pagination: {
@@ -76,7 +79,7 @@ def my_posts
   offset = (params[:offset] || 0).to_i
 
   # 現在のユーザーの投稿のみを取得
-  combinations = @current_user.combinations.order(created_at: :desc).with_attached_image
+  combinations = @current_user.combinations.includes(:user).order(created_at: :desc).with_attached_image
 
   # 総件数を取得（ページネーション用）
   total_count = combinations.count
@@ -92,7 +95,8 @@ def my_posts
     combinations: combinations.map { |c|
       c.as_json.merge(
         image: c.image.attached? ? url_for(c.image) : nil,
-        tags: c.tag_names
+        tags: c.tag_names,
+        firebase_uid: c.user.firebase_uid
       )
     },
     pagination: {
@@ -111,7 +115,7 @@ def search
   limit = (params[:limit] || 10).to_i
   offset = (params[:offset] || 0).to_i
 
-  combinations = Combination.all.with_attached_image
+  combinations = Combination.includes(:user).all.with_attached_image
 
   # キーワード検索
   if search_word.present?
@@ -149,7 +153,8 @@ def search
     combinations: combinations.map { |c|
       c.as_json.merge(
         image: c.image.attached? ? url_for(c.image) : nil,
-        tags: c.tag_names
+        tags: c.tag_names,
+        firebase_uid: c.user.firebase_uid
       )
     },
     pagination: {
@@ -182,7 +187,8 @@ end
 
       render json: combination.as_json.merge(
         image: combination.image.attached? ? url_for(combination.image) : nil,
-        tags: combination.tag_names
+        tags: combination.tag_names,
+        firebase_uid: combination.user.firebase_uid
       ), status: :created
     else
       render json: combination.errors, status: :unprocessable_entity
@@ -193,7 +199,11 @@ end
     combination = Combination.find(params[:id])
     render json: combination.as_json.merge(
       image: combination.image.attached? ? url_for(combination.image) : nil,
-      tags: combination.tag_names
+      tags: combination.tag_names,
+      user_name: combination.user.name,
+      firebase_uid: combination.user.firebase_uid,
+      created_at: combination.created_at,
+      updated_at: combination.updated_at
     )
   end
 
@@ -215,7 +225,8 @@ end
 
       render json: combination.as_json.merge(
         image: combination.image.attached? ? url_for(combination.image) : nil,
-        tags: combination.tag_names
+        tags: combination.tag_names,
+        firebase_uid: combination.user.firebase_uid
       )
     else
       render json: combination.errors, status: :unprocessable_entity
