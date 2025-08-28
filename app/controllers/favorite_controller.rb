@@ -12,6 +12,12 @@ class FavoriteController < ApplicationController
     combination_id = params[:combination_id] || params.dig(:favorite, :combination_id)
     combination = Combination.find(combination_id)
 
+    # 自分の投稿をお気に入りに追加しようとしている場合はエラー
+    if combination.user_id == @current_user.id
+      render json: { error: "自分の投稿をお気に入りに追加することはできません" }, status: :forbidden
+      return
+    end
+
     # 既に追加済みかチェック
     existing_favorite = @current_user.favorites.find_by(combination: combination)
     if existing_favorite
