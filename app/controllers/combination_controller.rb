@@ -222,6 +222,25 @@ end
     end
   end
 
+  # DELETE /combinations/:id - 投稿を削除
+  def destroy
+    combination = Combination.find(params[:id])
+
+    # 自分の投稿かチェック
+    if combination.user_id != @current_user.id
+      render json: { error: "自分の投稿のみ削除できます" }, status: :forbidden
+      return
+    end
+
+    if combination.destroy
+      render json: { message: "投稿を削除しました" }, status: :ok
+    else
+      render json: { error: "削除に失敗しました" }, status: :unprocessable_entity
+    end
+  rescue ActiveRecord::RecordNotFound
+    render json: { error: "投稿が見つかりません" }, status: :not_found
+  end
+
   private
 
   # 受け付けるパラメータを指定
