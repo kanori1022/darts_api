@@ -8,6 +8,7 @@ Rails.application.routes.draw do
 
   get "/combinations/:id", to: "combination#show"
   put "/combinations/:id", to: "combination#update"
+  delete "/combinations/:id", to: "combination#destroy"
 
   post "/combinations", to: "combination#create"
   post "/users", to: "user#create"
