@@ -112,6 +112,7 @@ end
 def search
   search_word = params[:searchWord] || ""
   tags = params[:tags] || ""
+  username = params[:username] || ""
   limit = (params[:limit] || 10).to_i
   offset = (params[:offset] || 0).to_i
 
@@ -127,30 +128,35 @@ def search
     combinations = combinations.search_by_tags(tags)
   end
 
-  # 人気順でソート
-  combinations = combinations.joins("LEFT JOIN favorites ON favorites.combination_id = combinations.id")
-                            .group("combinations.id")
-                            .order("COUNT(favorites.id) DESC")
+  # ユーザー名検索
+  if username.present?
+    combinations = combinations.joins(:user).where("users.name LIKE ?", "%#{username}%")
+  end
+
+  # より簡単なアプローチ：created_at降順でソート（人気順は一旦避ける）
+  final_combinations = combinations.order(created_at: :desc)
+                                  .limit(limit)
+                                  .offset(offset)
 
   # 総件数を取得（ページネーション用）- GROUP BY句がある場合は別途取得
-  base_combinations = Combination.all
+  base_combinations = Combination.includes(:user).all
   if search_word.present?
     base_combinations = base_combinations.search_by_keyword(search_word)
   end
   if tags.present?
     base_combinations = base_combinations.search_by_tags(tags)
   end
+  if username.present?
+    base_combinations = base_combinations.joins(:user).where("users.name LIKE ?", "%#{username}%")
+  end
   total_count = base_combinations.count
-
-  # limitとoffsetを適用
-  combinations = combinations.limit(limit).offset(offset)
 
   # 現在のページと総ページ数を計算
   current_page = (offset / limit) + 1
   total_pages = (total_count.to_f / limit).ceil
 
   render json: {
-    combinations: combinations.map { |c|
+    combinations: final_combinations.map { |c|
       c.as_json.merge(
         image: c.image.attached? ? url_for(c.image) : nil,
         tags: c.tag_names,
