@@ -21,5 +21,9 @@ Rails.application.routes.draw do
   post "/favorites", to: "favorite#create"
   delete "/favorites/:combination_id", to: "favorite#destroy"
 
+  # View histories
+  get "/view_histories", to: "view_histories#index"
+  post "/view_histories", to: "view_histories#create"
+
   get "up" => "rails/health#show", as: :rails_health_check
 end

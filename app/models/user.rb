@@ -7,4 +7,5 @@ class User < ApplicationRecord
 
   # 投稿したコンビネーションとの関連付け
   has_many :combinations, dependent: :destroy
+  has_many :view_histories, dependent: :destroy
 end

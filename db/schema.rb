@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_01_124405) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_02_000000) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -87,6 +87,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_01_124405) do
     t.text "introduction"
   end
 
+  create_table "view_histories", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "combination_id", null: false
+    t.datetime "viewed_at", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["combination_id"], name: "index_view_histories_on_combination_id"
+    t.index ["user_id", "combination_id"], name: "index_view_histories_on_user_id_and_combination_id", unique: true
+    t.index ["user_id", "viewed_at"], name: "index_view_histories_on_user_id_and_viewed_at"
+    t.index ["user_id"], name: "index_view_histories_on_user_id"
+  end
+
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
   add_foreign_key "combinations", "users"
@@ -94,4 +106,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_01_124405) do
   add_foreign_key "favorites", "users"
   add_foreign_key "taggings", "combinations"
   add_foreign_key "taggings", "tags"
+  add_foreign_key "view_histories", "combinations"
+  add_foreign_key "view_histories", "users"
 end
