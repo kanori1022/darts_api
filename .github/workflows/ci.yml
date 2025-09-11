@@ -39,6 +39,11 @@ jobs:
       - name: Install dependencies
         run: bundle install
 
+      - name: Install MySQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mysql-client
+
       - name: Wait for MySQL
         run: |
           until mysqladmin ping -h 127.0.0.1 -P 3306 -u root -ppassword --silent; do
@@ -46,6 +51,10 @@ jobs:
             sleep 2
           done
           echo "MySQL is ready!"
+
+      - name: Create test database
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -ppassword -e "CREATE DATABASE IF NOT EXISTS database_test;"
 
       - name: Run database migrations
         run: bundle exec rails db:migrate
