@@ -13,6 +13,8 @@ services:
       MYSQL_HOST: ${MYSQL_HOST}
     env_file:
       - .env
+    profiles:
+      - local
   api:
     # コンテナ名の指定
     container_name: darts-api
@@ -29,6 +31,8 @@ services:
       MYSQL_PORT: ${MYSQL_PORT}
     env_file:
       - .env
+    profiles:
+      - local
     # データの永続化（ホスト側のカレントディレクトリにマウントする）
     volumes:
       - .:/api
@@ -38,3 +42,32 @@ services:
     # 依存関係の指定（dbが起動した後に、webが起動するようになる）
     depends_on:
       - db
+
+  # CI用の設定（.envファイルなしで動作）
+  db-ci:
+    image: mysql:8.0.42
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: database
+      MYSQL_HOST: db-ci
+    profiles:
+      - ci
+
+  api-ci:
+    container_name: darts-api-ci
+    build: .
+    command: /bin/bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 8000 -b '0.0.0.0'"
+    tty: true
+    environment:
+      MYSQL_USER: root
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: database
+      MYSQL_DATABASE_TEST: database_test
+      MYSQL_HOST: db-ci
+      MYSQL_PORT: 3306
+    profiles:
+      - ci
+    depends_on:
+      - db-ci
