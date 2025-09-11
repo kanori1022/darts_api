@@ -8,52 +8,50 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0.42
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: database_test
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
     env:
-      MYSQL_PASSWORD: password
-      MYSQL_DATABASE: database
-      MYSQL_DATABASE_TEST: database_test
-      MYSQL_HOST: db
-      MYSQL_PORT: 3306
+      RAILS_ENV: test
       MYSQL_USER: root
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: database_test
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: .ruby-version
+          bundler-cache: true
 
-      - name: Build and start services
-        run: |
-          docker compose --profile ci up -d --build
-          # Wait for database to be ready
-          sleep 15
-          # Check if services are running
-          docker compose --profile ci ps
+      - name: Install dependencies
+        run: bundle install
 
-      - name: Wait for database to be ready
+      - name: Wait for MySQL
         run: |
-          # Wait for MySQL to be ready
-          until docker compose --profile ci exec -T db-ci mysqladmin ping -h localhost --silent; do
-            echo "Waiting for database..."
+          until mysqladmin ping -h 127.0.0.1 -P 3306 -u root -ppassword --silent; do
+            echo "Waiting for MySQL..."
             sleep 2
           done
-          echo "Database is ready!"
-
-      - name: Wait for API service to be ready
-        run: |
-          # Wait for API service to be healthy
-          docker compose --profile ci wait --condition=healthy api-ci
-          echo "API service is ready!"
+          echo "MySQL is ready!"
 
       - name: Run database migrations
-        run: docker compose --profile ci exec -T api-ci rails db:migrate RAILS_ENV=test
+        run: bundle exec rails db:migrate
 
       - name: Run RSpec tests
-        run: docker compose --profile ci exec -T api-ci rspec
-
-      - name: Stop services
-        if: always()
-        run: docker compose --profile ci down
+        run: bundle exec rspec
 
   # lint:
   #   runs-on: ubuntu-latest
