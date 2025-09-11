@@ -8,6 +8,13 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: database
+      MYSQL_DATABASE_TEST: database_test
+      MYSQL_HOST: db
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
