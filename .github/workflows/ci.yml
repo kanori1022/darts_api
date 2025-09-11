@@ -23,6 +23,7 @@ jobs:
       MYSQL_USER: root
       MYSQL_PASSWORD: password
       MYSQL_DATABASE: database_test
+      MYSQL_DATABASE_TEST: database_test
       MYSQL_HOST: 127.0.0.1
       MYSQL_PORT: 3306
 
@@ -68,8 +69,8 @@ jobs:
           echo "Database configuration:"
           bundle exec rails runner "puts ActiveRecord::Base.configurations.configs_for(env_name: 'test').first.inspect"
 
-      - name: Run database migrations
-        run: bundle exec rails db:migrate
+      - name: Prepare database (create + migrate)
+        run: bundle exec rails db:prepare
 
       - name: Run RSpec tests
         run: bundle exec rspec
