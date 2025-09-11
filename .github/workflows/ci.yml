@@ -41,11 +41,8 @@ jobs:
 
       - name: Wait for API service to be ready
         run: |
-          # Wait for API service to be running
-          until docker compose --profile ci ps api-ci | grep -q "Up"; do
-            echo "Waiting for API service..."
-            sleep 2
-          done
+          # Wait for API service to be healthy
+          docker compose --profile ci wait --condition=healthy api-ci
           echo "API service is ready!"
 
       - name: Run database migrations

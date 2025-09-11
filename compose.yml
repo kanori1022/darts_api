@@ -66,6 +66,12 @@ services:
       MYSQL_DATABASE_TEST: database_test
       MYSQL_HOST: db-ci
       MYSQL_PORT: 3306
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/up"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     profiles:
       - ci
     depends_on:
