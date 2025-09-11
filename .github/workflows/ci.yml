@@ -56,6 +56,18 @@ jobs:
         run: |
           mysql -h 127.0.0.1 -P 3306 -u root -ppassword -e "CREATE DATABASE IF NOT EXISTS database_test;"
 
+      - name: Debug database configuration
+        run: |
+          echo "Environment variables:"
+          echo "RAILS_ENV: $RAILS_ENV"
+          echo "MYSQL_USER: $MYSQL_USER"
+          echo "MYSQL_PASSWORD: $MYSQL_PASSWORD"
+          echo "MYSQL_DATABASE: $MYSQL_DATABASE"
+          echo "MYSQL_HOST: $MYSQL_HOST"
+          echo "MYSQL_PORT: $MYSQL_PORT"
+          echo "Database configuration:"
+          bundle exec rails runner "puts ActiveRecord::Base.configurations.configs_for(env_name: 'test').first.inspect"
+
       - name: Run database migrations
         run: bundle exec rails db:migrate
 
