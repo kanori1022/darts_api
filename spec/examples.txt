@@ -1,0 +1,30 @@
+example_id                                    | status | run_time        |
+--------------------------------------------- | ------ | --------------- |
+./spec/models/combination_spec.rb[1:1:1]      | passed | 0.03428 seconds |
+./spec/models/combination_spec.rb[1:1:2]      | passed | 0.00384 seconds |
+./spec/models/combination_spec.rb[1:2:1]      | passed | 0.12094 seconds |
+./spec/models/combination_spec.rb[1:3:1]      | passed | 0.09704 seconds |
+./spec/models/favorite_spec.rb[1:1]           | passed | 0.02578 seconds |
+./spec/models/tag_spec.rb[1:1]                | passed | 0.0208 seconds  |
+./spec/models/tag_spec.rb[1:2:1]              | passed | 0.0218 seconds  |
+./spec/models/tagging_spec.rb[1:1]            | passed | 0.02051 seconds |
+./spec/models/user_spec.rb[1:1]               | passed | 0.00129 seconds |
+./spec/models/view_history_spec.rb[1:1]       | passed | 0.02369 seconds |
+./spec/requests/combinations_spec.rb[1:1:1]   | passed | 0.17329 seconds |
+./spec/requests/combinations_spec.rb[1:2:1]   | passed | 0.04943 seconds |
+./spec/requests/combinations_spec.rb[1:3:1]   | passed | 0.05411 seconds |
+./spec/requests/combinations_spec.rb[1:4:1]   | passed | 0.12016 seconds |
+./spec/requests/combinations_spec.rb[1:5:1]   | passed | 0.01599 seconds |
+./spec/requests/combinations_spec.rb[1:5:2]   | passed | 0.04371 seconds |
+./spec/requests/combinations_spec.rb[1:6:1]   | passed | 0.02018 seconds |
+./spec/requests/favorites_spec.rb[1:1:1]      | passed | 0.04492 seconds |
+./spec/requests/favorites_spec.rb[1:2:1]      | passed | 0.02016 seconds |
+./spec/requests/favorites_spec.rb[1:2:2]      | passed | 0.02126 seconds |
+./spec/requests/favorites_spec.rb[1:3:1]      | passed | 0.03141 seconds |
+./spec/requests/users_spec.rb[1:1:1]          | passed | 0.0386 seconds  |
+./spec/requests/users_spec.rb[1:1:2]          | passed | 0.00726 seconds |
+./spec/requests/users_spec.rb[1:2:1]          | passed | 0.03145 seconds |
+./spec/requests/users_spec.rb[1:3:1]          | passed | 0.03255 seconds |
+./spec/requests/view_histories_spec.rb[1:1:1] | passed | 0.05242 seconds |
+./spec/requests/view_histories_spec.rb[1:2:1] | passed | 0.33008 seconds |
+./spec/requests/view_histories_spec.rb[1:2:2] | passed | 0.00774 seconds |
