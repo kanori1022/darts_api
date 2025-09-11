@@ -69,11 +69,8 @@ jobs:
           echo "Database configuration:"
           bundle exec rails runner "puts ActiveRecord::Base.configurations.configs_for(env_name: 'test').first.inspect"
 
-      - name: Prepare database (create + migrate)
-        run: bin/rails db:prepare RAILS_ENV=test
-
-      - name: Run database migrations (explicit)
-        run: bin/rails db:migrate RAILS_ENV=test
+      - name: Run database migrations
+        run: bundle exec rake db:migrate RAILS_ENV=test
 
       - name: Run RSpec tests
         run: bundle exec rspec
