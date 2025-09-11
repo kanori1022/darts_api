@@ -30,6 +30,24 @@ jobs:
           # Check if services are running
           docker compose --profile ci ps
 
+      - name: Wait for database to be ready
+        run: |
+          # Wait for MySQL to be ready
+          until docker compose --profile ci exec -T db-ci mysqladmin ping -h localhost --silent; do
+            echo "Waiting for database..."
+            sleep 2
+          done
+          echo "Database is ready!"
+
+      - name: Wait for API service to be ready
+        run: |
+          # Wait for API service to be running
+          until docker compose --profile ci ps api-ci | grep -q "Up"; do
+            echo "Waiting for API service..."
+            sleep 2
+          done
+          echo "API service is ready!"
+
       - name: Run database migrations
         run: docker compose --profile ci exec -T api-ci rails db:migrate RAILS_ENV=test
 
