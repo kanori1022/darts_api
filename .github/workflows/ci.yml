@@ -26,7 +26,9 @@ jobs:
         run: |
           docker compose --profile ci up -d --build
           # Wait for database to be ready
-          sleep 10
+          sleep 15
+          # Check if services are running
+          docker compose --profile ci ps
 
       - name: Run database migrations
         run: docker compose --profile ci exec -T api-ci rails db:migrate RAILS_ENV=test

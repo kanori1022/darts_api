@@ -51,7 +51,6 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: password
       MYSQL_DATABASE: database
-      MYSQL_HOST: db-ci
     profiles:
       - ci
 
