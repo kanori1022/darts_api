@@ -1,10 +1,9 @@
 class UserController < ApplicationController
+  skip_before_action :authenticate_user, only: [:create]
   # POST /users
   def create
     user = User.new(user_params)
-    user.id = @current_user.id
     puts "----------------------------------------------"
-    puts "user.id: #{user.id}"
     puts "user.name: #{user.name}"
     puts "----------------------------------------------"
 

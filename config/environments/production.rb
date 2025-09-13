@@ -54,11 +54,13 @@ Rails.application.configure do
   config.active_record.attributes_for_inspect = [ :id ]
 
   # Enable DNS rebinding protection and other `Host` header attacks.
-  # config.hosts = [
-  #   "example.com",     # Allow requests from example.com
-  #   /.*\.example\.com/ # Allow requests from subdomains like `www.example.com`
-  # ]
+  config.hosts = [
+    "combines-darts.link", # Allow requests from example.com
+    /.*\.combines-darts\.link/, # Allow requests from subdomains like `www.example.com`
+    /.*\.d2duoq54zvivuk\.amplifyapp\.com/, # https://pr-44.d2duoq54zvivuk.amplifyapp.com
+    /\A10\.0\.\d+\.\d+\z/ # Allow ALB internal IPs (VPC range)
+  ]
   #
   # Skip DNS rebinding protection for the default health check endpoint.
-  # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
 end
