@@ -87,11 +87,13 @@ jobs:
                   .image = $IMAGE
                   | if .name == "api" then
                       .workingDirectory = "/api"
-                      | .command = ["/bin/bash","-c","cd /api && bundle exec rails server -b 0.0.0.0 -p 8000"]
+                      | .entryPoint = ["/bin/sh","-c"]
+                      | .command = ["cd /api && bundle exec rails server -b 0.0.0.0 -p 8000"]
                     else . end
                   | if .name == "migration" then
                       .workingDirectory = "/api"
-                      | .command = ["/bin/bash","-c","cd /api && bundle exec rails db:migrate"]
+                      | .entryPoint = ["/bin/sh","-c"]
+                      | .command = ["cd /api && bundle exec rails db:migrate"]
                       | .essential = false
                     else . end
                 ))
