@@ -58,7 +58,7 @@ Rails.application.configure do
     "combines-darts.link", # Allow requests from example.com
     /.*\.combines-darts\.link/, # Allow requests from subdomains like `www.example.com`
     /.*\.d2duoq54zvivuk\.amplifyapp\.com/, # https://pr-44.d2duoq54zvivuk.amplifyapp.com
-    /\A10\.0\.\d+\.\d+\z/ # Allow ALB internal IPs (VPC range)
+    /\d+\.\d+\.\d+\.\d+\z/ # Allow ALB internal IPs (VPC range)
   ]
   #
   # Skip DNS rebinding protection for the default health check endpoint.
