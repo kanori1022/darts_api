@@ -49,18 +49,15 @@ jobs:
         run: |
           echo "ECR_REPOSITORY_URI=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}" >> $GITHUB_OUTPUT
 
-      - name: Set up QEMU (for cross-architecture builds)
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push image (arm64, SHA tag)
+      - name: Build and push image (amd64, SHA tag only)
         id: build
         uses: docker/build-push-action@v5
         with:
           context: .
-          platforms: linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.vars.outputs.image_uri_sha }}
           cache-from: type=gha
@@ -68,8 +65,8 @@ jobs:
 
       - name: Smoke test built image (contents and rails via bundler)
         run: |
-          docker run --rm --platform linux/arm64 ${{ steps.vars.outputs.image_uri_sha }} sh -lc 'uname -m; pwd; ls -la /api | head; test -f /api/config/application.rb'
-          docker run --rm --platform linux/arm64 ${{ steps.vars.outputs.image_uri_sha }} sh -lc 'cd /api && bundle exec rails -v'
+          docker run --rm --platform linux/amd64 ${{ steps.vars.outputs.image_uri_sha }} sh -lc 'uname -m; pwd; ls -la /api | head; test -f /api/config/application.rb'
+          docker run --rm --platform linux/amd64 ${{ steps.vars.outputs.image_uri_sha }} sh -lc 'cd /api && bundle exec rails -v'
 
       - name: Fetch current task definition
         run: |
@@ -78,22 +75,16 @@ jobs:
             --query 'taskDefinition' \
             > taskdef.json
 
-      - name: Render new task definition (set image to built tag and enforce commands)
+      - name: Render new task definition (set image to built SHA tag)
         run: |
           cat taskdef.json \
             | jq 'del(.taskDefinitionArn, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .revision, .status)' \
             | jq --arg IMAGE "${{ steps.vars.outputs.image_uri_sha }}" '
                 .containerDefinitions = (.containerDefinitions | map(
                   .image = $IMAGE
-                  | if .name == "api" then
-                      .workingDirectory = "/api"
-                      | .entryPoint = ["/bin/sh","-c"]
-                      | .command = ["cd /api && bundle exec rails server -b 0.0.0.0 -p 8000"]
-                    else . end
                   | if .name == "migration" then
                       .workingDirectory = "/api"
-                      | .entryPoint = ["/bin/sh","-c"]
-                      | .command = ["cd /api && bundle exec rails db:migrate"]
+                      | .command = ["/bin/bash","-c","cd /api && bundle exec rails db:migrate"]
                       | .essential = false
                     else . end
                 ))

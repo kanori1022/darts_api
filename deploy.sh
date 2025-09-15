@@ -4,9 +4,9 @@
 aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin $(aws sts get-caller-identity --query Account --output text).dkr.ecr.ap-northeast-1.amazonaws.com
 
 # ECRにpush
-docker build -t latest . --no-cache
-docker tag latest 248612013161.dkr.ecr.ap-northeast-1.amazonaws.com/darts_api:latest
-docker push 248612013161.dkr.ecr.ap-northeast-1.amazonaws.com/darts_api:latest
+docker build -t latest -f Dockerfile --platform linux/amd64 . --no-cache
+docker tag latest 248612013161.dkr.ecr.ap-northeast-1.amazonaws.com/darts_api:amd64
+docker push 248612013161.dkr.ecr.ap-northeast-1.amazonaws.com/darts_api:amd64
 
 # 1. 新しいリビジョンを作成
 # https://248612013161-c7jjfyp2.ap-northeast-1.console.aws.amazon.com/ecs/v2/task-definitions/darts_api_task_definition?status=ACTIVE&region=ap-northeast-1
