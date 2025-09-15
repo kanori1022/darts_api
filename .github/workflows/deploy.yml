@@ -16,15 +16,11 @@ env:
   ECS_CLUSTER_NAME: darts_api
   ECS_SERVICE_NAME: darts_api_task_definition-service-69mkaqef
   ECS_TASK_FAMILY: darts_api_task_definition
-  IMAGE_TAG_LATEST: latest
 
 jobs:
   deploy:
-    name: Build, Push, and Deploy
+    name: Build and Deploy (SHA only)
     runs-on: ubuntu-latest
-
-    permissions:
-      contents: read
 
     steps:
       - name: Checkout
@@ -47,23 +43,21 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Set image tags
+      - name: Set image tag (short SHA)
         id: vars
         run: |
           SHORT_SHA="${GITHUB_SHA::12}"
           echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
-          echo "image_uri=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:$SHORT_SHA" >> $GITHUB_OUTPUT
-          echo "image_uri_latest=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG_LATEST }}" >> $GITHUB_OUTPUT
+          echo "image_uri_sha=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:$SHORT_SHA" >> $GITHUB_OUTPUT
 
-      - name: Build and push Docker image (linux/arm64)
+      - name: Build and push image (linux/arm64, no-cache, sha only)
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           platforms: linux/arm64
-          tags: |
-            ${{ steps.vars.outputs.image_uri }}
-            ${{ steps.vars.outputs.image_uri_latest }}
+          no-cache: true
+          tags: ${{ steps.vars.outputs.image_uri_sha }}
 
       - name: Fetch current task definition
         run: |
@@ -72,12 +66,12 @@ jobs:
             --query 'taskDefinition' \
             > taskdef.json
 
-      - name: Render new task definition with updated image
+      - name: Render new task definition (set image to SHA)
         run: |
           sudo apt-get update -y && sudo apt-get install -y jq
           cat taskdef.json \
             | jq 'del(.taskDefinitionArn, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .revision, .status)' \
-            | jq --arg IMAGE "${{ steps.vars.outputs.image_uri }}" '
+            | jq --arg IMAGE "${{ steps.vars.outputs.image_uri_sha }}" '
                 .containerDefinitions = (.containerDefinitions | map(.image = $IMAGE))
               ' \
             > taskdef-rendered.json
@@ -96,15 +90,10 @@ jobs:
           aws ecs update-service \
             --cluster "${{ env.ECS_CLUSTER_NAME }}" \
             --service "${{ env.ECS_SERVICE_NAME }}" \
-            --task-definition "${{ steps.register.outputs.task_definition_arn }}" \
-            --force-new-deployment
+            --task-definition "${{ steps.register.outputs.task_definition_arn }}"
 
       - name: Wait for service stability
         run: |
           aws ecs wait services-stable \
             --cluster "${{ env.ECS_CLUSTER_NAME }}" \
             --services "${{ env.ECS_SERVICE_NAME }}"
-
-      - name: Output deployed image
-        run: |
-          echo "Deployed image: ${{ steps.vars.outputs.image_uri }}"
