@@ -37,12 +37,10 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Set image tag (short SHA)
+      - name: Set image tag (latest)
         id: vars
         run: |
-          SHORT_SHA="${GITHUB_SHA::12}"
-          echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
-          echo "image_uri_sha=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "image_uri_latest=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest" >> $GITHUB_OUTPUT
 
       - name: Set Vars
         id: set-vars
@@ -54,17 +52,17 @@ jobs:
           docker build \
             --platform linux/amd64 \
             -f ./Dockerfile \
-            -t "${{ steps.vars.outputs.image_uri_sha }}" \
+            -t "${{ steps.vars.outputs.image_uri_latest }}" \
             .
 
       - name: Push image (docker CLI)
         run: |
-          docker push "${{ steps.vars.outputs.image_uri_sha }}"
+          docker push "${{ steps.vars.outputs.image_uri_latest }}"
 
       - name: Smoke test built image (contents and rails via bundler)
         run: |
-          docker run --rm --platform linux/amd64 ${{ steps.vars.outputs.image_uri_sha }} sh -lc 'uname -m; pwd; ls -la /api | head; test -f /api/config/application.rb'
-          docker run --rm --platform linux/amd64 ${{ steps.vars.outputs.image_uri_sha }} sh -lc 'cd /api && bundle exec rails -v'
+          docker run --rm --platform linux/amd64 ${{ steps.vars.outputs.image_uri_latest }} sh -lc 'uname -m; pwd; ls -la /api | head; test -f /api/config/application.rb'
+          docker run --rm --platform linux/amd64 ${{ steps.vars.outputs.image_uri_latest }} sh -lc 'cd /api && bundle exec rails -v'
 
       - name: Fetch current task definition
         run: |
@@ -73,11 +71,11 @@ jobs:
             --query 'taskDefinition' \
             > taskdef.json
 
-      - name: Render new task definition (set image to built SHA tag)
+      - name: Render new task definition (set image to latest tag)
         run: |
           cat taskdef.json \
             | jq 'del(.taskDefinitionArn, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .revision, .status)' \
-            | jq --arg IMAGE "${{ steps.vars.outputs.image_uri_sha }}" '
+            | jq --arg IMAGE "${{ steps.vars.outputs.image_uri_latest }}" '
                 .containerDefinitions = (.containerDefinitions | map(
                   .image = $IMAGE
                   | if .name == "migration" then
