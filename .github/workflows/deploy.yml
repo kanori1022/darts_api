@@ -20,7 +20,7 @@ env:
 jobs:
   deploy:
     name: Build and Deploy (SHA only)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm64
 
     steps:
       - name: Checkout
@@ -37,9 +37,6 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Set up QEMU (for cross-architecture builds)
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -50,14 +47,21 @@ jobs:
           echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
           echo "image_uri_sha=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:$SHORT_SHA" >> $GITHUB_OUTPUT
 
-      - name: Build and push image (linux/arm64, no-cache, sha only)
+      - name: Build and push image (arm64, no-cache, sha only)
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
           platforms: linux/arm64
-          no-cache: true
+          # no-cache: true
           tags: ${{ steps.vars.outputs.image_uri_sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Smoke test built image (contents and rails via bundler)
+        run: |
+          docker run --rm ${{ steps.vars.outputs.image_uri_sha }} sh -lc 'uname -m; pwd; ls -la /api | head; test -f /api/config/application.rb'
+          docker run --rm ${{ steps.vars.outputs.image_uri_sha }} sh -lc 'cd /api && bundle exec rails -v'
 
       - name: Fetch current task definition
         run: |
