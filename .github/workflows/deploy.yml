@@ -20,7 +20,7 @@ env:
 jobs:
   deploy:
     name: Build and Deploy (SHA only)
-    runs-on: ubuntu-24.04-arm64
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -36,6 +36,9 @@ jobs:
       - name: Login to Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up QEMU (for cross-architecture builds)
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -60,8 +63,8 @@ jobs:
 
       - name: Smoke test built image (contents and rails via bundler)
         run: |
-          docker run --rm ${{ steps.vars.outputs.image_uri_sha }} sh -lc 'uname -m; pwd; ls -la /api | head; test -f /api/config/application.rb'
-          docker run --rm ${{ steps.vars.outputs.image_uri_sha }} sh -lc 'cd /api && bundle exec rails -v'
+          docker run --rm --platform linux/arm64 ${{ steps.vars.outputs.image_uri_sha }} sh -lc 'uname -m; pwd; ls -la /api | head; test -f /api/config/application.rb'
+          docker run --rm --platform linux/arm64 ${{ steps.vars.outputs.image_uri_sha }} sh -lc 'cd /api && bundle exec rails -v'
 
       - name: Fetch current task definition
         run: |

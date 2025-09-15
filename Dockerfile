@@ -21,7 +21,7 @@ COPY . /api
 EXPOSE 8000
 
 # コンテナ起動時に実行されるコマンド
-CMD ["rails", "server", "-b", "0.0.0.0", "-p", "8000"]
+CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0", "-p", "8000"]
 
 # https://zenn.dev/tmasuyama1114/articles/b2bb8bc141dcbd
 # 1. gem install bundler
