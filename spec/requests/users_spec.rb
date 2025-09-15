@@ -20,13 +20,17 @@ RSpec.describe "Users API", type: :request do
   end
 
   describe 'POST /users' do
-    it 'creates user profile for current user' do
-      # Use a non-persisted current user with a fresh id to avoid PK conflict
-      new_current = User.new(id: 99999, firebase_uid: 'uid-new-user')
-      stub_current_user(new_current)
+    it 'creates user profile without authentication' do
+      # POST /users skips authentication, so no stub_current_user needed
       post '/users', params: { user: { name: 'Hanako', introduction: 'Hello' } }
       expect(response).to have_http_status(:created)
-      expect(User.find(99999).name).to eq('Hanako')
+      json = JSON.parse(response.body)
+      expect(json['name']).to eq('Hanako')
+      expect(json['introduction']).to eq('Hello')
+      # Verify user was actually created in database
+      created_user = User.find_by(name: 'Hanako')
+      expect(created_user).to be_present
+      expect(created_user.introduction).to eq('Hello')
     end
   end
 
