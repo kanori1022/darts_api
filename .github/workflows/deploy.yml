@@ -20,7 +20,7 @@ env:
 jobs:
   deploy:
     name: Build and Deploy
-    runs-on: macos-latest
+    runs-on: ubuntu-24.04-arm64
 
     steps:
       - name: Checkout
