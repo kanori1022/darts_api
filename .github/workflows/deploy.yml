@@ -68,8 +68,8 @@ jobs:
 
       - name: Smoke test built image (contents and rails via bundler)
         run: |
-          docker run --rm --platform linux/arm64 ${{ steps.build.outputs.container-image }} sh -lc 'uname -m; pwd; ls -la /api | head; test -f /api/config/application.rb'
-          docker run --rm --platform linux/arm64 ${{ steps.build.outputs.container-image }} sh -lc 'cd /api && bundle exec rails -v'
+          docker run --rm --platform linux/arm64 ${{ steps.vars.outputs.image_uri_sha }} sh -lc 'uname -m; pwd; ls -la /api | head; test -f /api/config/application.rb'
+          docker run --rm --platform linux/arm64 ${{ steps.vars.outputs.image_uri_sha }} sh -lc 'cd /api && bundle exec rails -v'
 
       - name: Fetch current task definition
         run: |
