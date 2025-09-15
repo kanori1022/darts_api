@@ -1,0 +1,22 @@
+name: Container Push
+
+inputs:
+  ecr-repository-uri:
+    required: true
+    description: ECRリポジトリのURI
+  container-image:
+    required: true
+    description: コンテナイメージ
+
+runs:
+  using: composite
+  steps:
+    - name: Push container image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ inputs.container-image }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        platforms: linux/arm64

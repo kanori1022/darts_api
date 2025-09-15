@@ -19,8 +19,8 @@ env:
 
 jobs:
   deploy:
-    name: Build and Deploy (SHA only)
-    runs-on: ubuntu-latest
+    name: Build and Deploy
+    runs-on: ubuntu-arm64
 
     steps:
       - name: Checkout
@@ -37,12 +37,6 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Set up QEMU (for cross-architecture builds)
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
       - name: Set image tag (short SHA)
         id: vars
         run: |
@@ -50,16 +44,24 @@ jobs:
           echo "short_sha=$SHORT_SHA" >> $GITHUB_OUTPUT
           echo "image_uri_sha=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:$SHORT_SHA" >> $GITHUB_OUTPUT
 
-      - name: Build and push image (arm64, no-cache, sha only)
-        uses: docker/build-push-action@v5
+      - name: Set Vars
+        id: set-vars
+        run: |
+          echo "ECR_REPOSITORY_URI=${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}" >> $GITHUB_OUTPUT
+
+      - name: Build and push container image
+        id: build
+        uses: ./.github/actions/container-build/
         with:
-          context: .
-          push: true
+          ecr-repository-uri: ${{ steps.set-vars.outputs.ECR_REPOSITORY_URI }}
+          dockerfile-path: docker/ecs/Dockerfile
           platforms: linux/arm64
-          # no-cache: true
-          tags: ${{ steps.vars.outputs.image_uri_sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+
+      # - name: Push container image
+      #   uses: ./.github/actions/container-push/
+      #   with:
+      #     ecr-repository-uri: ${{ steps.set-vars.outputs.ECR_REPOSITORY_URI }}
+      #     container-image: ${{ steps.build.outputs.container-image }}
 
       - name: Smoke test built image (contents and rails via bundler)
         run: |
@@ -75,7 +77,6 @@ jobs:
 
       - name: Render new task definition (set image to SHA)
         run: |
-          sudo apt-get update -y && sudo apt-get install -y jq
           cat taskdef.json \
             | jq 'del(.taskDefinitionArn, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .revision, .status)' \
             | jq --arg IMAGE "${{ steps.vars.outputs.image_uri_sha }}" '
