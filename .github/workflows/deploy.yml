@@ -57,11 +57,11 @@ jobs:
             .
       - name: docker tag
         run: |
-          docker tag latest ${ECR_REPOSITORY_URI}:latest
+          docker tag latest ${{ steps.vars.outputs.image_uri_latest }}
 
       - name: Push image (docker CLI)
         run: |
-          docker push ${ECR_REPOSITORY_URI}:latest
+          docker push ${{ steps.vars.outputs.image_uri_latest }}
           
       - name: Fetch current task definition
         run: |
