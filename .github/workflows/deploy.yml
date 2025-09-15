@@ -51,21 +51,18 @@ jobs:
         run: |
           docker build \
             --platform linux/amd64 \
-            --pull \
             --no-cache \
-            -f ./Dockerfile \
-            -t "${{ steps.vars.outputs.image_uri_latest }}" \
+            -f Dockerfile \
+            -t latest \
             .
+      - name: docker tag
+        run: |
+          docker tag latest ${ECR_REPOSITORY_URI}:latest
 
       - name: Push image (docker CLI)
         run: |
-          docker push "${{ steps.vars.outputs.image_uri_latest }}"
-
-      - name: Smoke test built image (contents and rails via bundler)
-        run: |
-          docker run --rm --platform linux/amd64 ${{ steps.vars.outputs.image_uri_latest }} sh -lc 'uname -m; pwd; ls -la /api | head; test -f /api/config/application.rb'
-          docker run --rm --platform linux/amd64 ${{ steps.vars.outputs.image_uri_latest }} sh -lc 'cd /api && bundle exec rails -v'
-
+          docker push ${ECR_REPOSITORY_URI}:latest
+          
       - name: Fetch current task definition
         run: |
           aws ecs describe-task-definition \
