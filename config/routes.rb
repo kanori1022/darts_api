@@ -15,6 +15,7 @@ Rails.application.routes.draw do
 
   put "/users", to: "user#update"
   get "/users", to: "user#show"
+  get "/users/:id", to: "user#show_by_id"
 
   # Favorite routes
   get "/favorites", to: "favorite#index"

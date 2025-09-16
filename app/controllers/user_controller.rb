@@ -1,5 +1,5 @@
 class UserController < ApplicationController
-  skip_before_action :authenticate_user, only: [:create]
+  skip_before_action :authenticate_user, only: [:create, :show_by_id]
   # POST /users
   def create
     user = User.new(user_params)
@@ -36,6 +36,18 @@ class UserController < ApplicationController
   # GET /users
   def show
     user = User.find_by(id: @current_user.id)
+    if user.nil?
+      render json: { error: "User not found" }, status: :not_found
+      return
+    end
+    render json: user.as_json.merge(
+      image: user.image.attached? ? url_for(user.image) : nil
+    )
+  end
+
+  # GET /users/:id
+  def show_by_id
+    user = User.find_by(id: params[:id])
     if user.nil?
       render json: { error: "User not found" }, status: :not_found
       return
