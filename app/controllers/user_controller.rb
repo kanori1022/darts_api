@@ -48,6 +48,6 @@ class UserController < ApplicationController
   private
 
   def user_params
-    params.require(:user).permit(:image, :name, :introduction)
+    params.require(:user).permit(:image, :firebase_uid, :name, :introduction)
   end
 end
