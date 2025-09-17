@@ -41,7 +41,9 @@ class UserController < ApplicationController
       return
     end
     render json: user.as_json.merge(
-      image: user.image.attached? ? url_for(user.image) : nil
+      image: user.image.attached? ? url_for(user.image) : nil,
+      headerGradientFrom: user.header_gradient_from,
+      headerGradientTo: user.header_gradient_to
     )
   end
 
@@ -53,7 +55,9 @@ class UserController < ApplicationController
       return
     end
     render json: user.as_json.merge(
-      image: user.image.attached? ? url_for(user.image) : nil
+      image: user.image.attached? ? url_for(user.image) : nil,
+      headerGradientFrom: user.header_gradient_from,
+      headerGradientTo: user.header_gradient_to
     )
   end
 
@@ -101,6 +105,6 @@ class UserController < ApplicationController
   private
 
   def user_params
-    params.require(:user).permit(:image, :firebase_uid, :name, :introduction)
+    params.require(:user).permit(:image, :firebase_uid, :name, :introduction, :header_gradient_from, :header_gradient_to)
   end
 end
