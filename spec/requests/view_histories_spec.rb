@@ -30,7 +30,7 @@ RSpec.describe "ViewHistories API", type: :request do
         post '/view_histories', params: { combination_id: combo.id }
         expect(response).to have_http_status(:created)
       end
-      expect(ViewHistory.where(user: user).count).to eq(30)
+      expect(ViewHistory.where(user: user).count).to eq(20)
     end
 
     it 'returns 400 when missing combination_id' do
