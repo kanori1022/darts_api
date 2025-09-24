@@ -182,6 +182,11 @@ end
     puts "----------------------------------------------"
     puts "combination.title: #{combination.title}"
     puts "combination.user_id: #{combination.user_id}"
+    puts "combination.full_setting_length: #{combination.full_setting_length}"
+    puts "combination.full_setting_weight: #{combination.full_setting_weight}"
+    puts "combination.barrel_weight: #{combination.barrel_weight}"
+    puts "combination.barrel_max_diameter: #{combination.barrel_max_diameter}"
+    puts "combination.barrel_min_diameter: #{combination.barrel_min_diameter}"
     puts "tags: #{params[:combination][:tags]}"
     puts "----------------------------------------------"
 
@@ -262,6 +267,6 @@ end
 
   # 受け付けるパラメータを指定
   def combination_params
-    params.require(:combination).permit(:title, :image, :flight, :shaft, :barrel, :tip, :description, tags: {})
+    params.require(:combination).permit(:title, :image, :flight, :shaft, :barrel, :tip, :description, :full_setting_length, :full_setting_weight, :barrel_weight, :barrel_max_diameter, :barrel_min_diameter, tags: {})
   end
 end

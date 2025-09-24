@@ -23,7 +23,7 @@ class Combination < ApplicationRecord
   # タグ関連のスコープ
   scope :with_tags, ->(tag_names) {
     return all if tag_names.blank?
-    
+
     joins(:tags).where(tags: { name: tag_names })
   }
 
@@ -34,10 +34,10 @@ class Combination < ApplicationRecord
 
   def tag_names=(names)
     return if names.blank?
-    
+
     # 既存のタグ関連付けを削除
     self.tags.clear
-    
+
     # 新しいタグを作成・関連付け
     tag_objects = Tag.find_or_create_by_names(names)
     self.tags = tag_objects
@@ -46,16 +46,16 @@ class Combination < ApplicationRecord
   # 検索用のスコープ
   scope :search_by_keyword, ->(keyword) {
     return all if keyword.blank?
-    
+
     where(
-      "title LIKE ? OR description LIKE ? OR flight LIKE ? OR shaft LIKE ? OR barrel LIKE ? OR tip LIKE ?",
-      "%#{keyword}%", "%#{keyword}%", "%#{keyword}%", "%#{keyword}%", "%#{keyword}%", "%#{keyword}%"
+      "title LIKE ? OR description LIKE ? OR flight LIKE ? OR shaft LIKE ? OR barrel LIKE ? OR tip LIKE ? OR full_setting_length LIKE ? OR full_setting_weight LIKE ? OR barrel_weight LIKE ? OR barrel_max_diameter LIKE ? OR barrel_min_diameter LIKE ?",
+      "%#{keyword}%", "%#{keyword}%", "%#{keyword}%", "%#{keyword}%", "%#{keyword}%", "%#{keyword}%", "%#{keyword}%", "%#{keyword}%", "%#{keyword}%", "%#{keyword}%", "%#{keyword}%"
     )
   }
 
   scope :search_by_tags, ->(tag_names) {
     return all if tag_names.blank?
-    
+
     tag_array = tag_names.is_a?(String) ? [tag_names] : tag_names
     joins(:tags).where(tags: { name: tag_array }).distinct
   }
