@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_17_102909) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_24_053422) do
   create_table "active_storage_attachments", charset: "utf8mb4", collation: "utf8mb4_0900_ai_ci", force: :cascade do |t|
     t.string "name", null: false
     t.string "record_type", null: false
@@ -50,6 +50,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_17_102909) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.integer "favorites_count"
+    t.decimal "full_setting_length", precision: 10
+    t.decimal "full_setting_weight", precision: 10
+    t.decimal "barrel_weight", precision: 10
+    t.decimal "barrel_max_diameter", precision: 10
+    t.decimal "barrel_min_diameter", precision: 10
     t.index ["user_id"], name: "index_combinations_on_user_id"
   end
 
