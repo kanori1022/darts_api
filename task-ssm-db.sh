@@ -34,6 +34,4 @@ echo "Port: 13306"
 aws ssm start-session \
     --target ecs:darts_api_${TASK_ID}_${CONTAINER_RUNTIME_ID} \
     --document-name AWS-StartPortForwardingSessionToRemoteHost \
-    --parameters "{\"host\":[\"darts-database.cv0i6mcgq0wu.ap-northeast-1.rds.amazonaws.com\"],\"portNumber\":[\"3306\"],\"localPortNumber\":[\"13306\"]}"
-
-
+    --parameters "{\"host\":[\"darts-db.cv0i6mcgq0wu.ap-northeast-1.rds.amazonaws.com\"],\"portNumber\":[\"3306\"],\"localPortNumber\":[\"13306\"]}"

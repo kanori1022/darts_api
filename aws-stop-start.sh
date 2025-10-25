@@ -8,8 +8,8 @@ set -e
 # 設定値
 ECS_CLUSTER="darts_api"
 ECS_SERVICE="darts_api_task_definition-service-69mkaqef"
-RDS_INSTANCE="darts-database"
-RDS_ENDPOINT="darts-database.cv0i6mcgq0wu.ap-northeast-1.rds.amazonaws.com"
+RDS_INSTANCE="darts-db"
+RDS_ENDPOINT="darts-db.cv0i6mcgq0wu.ap-northeast-1.rds.amazonaws.com"
 REGION="ap-northeast-1"
 
 # VPC Endpoint IDs
@@ -324,299 +324,299 @@ start_rds_instance() {
 }
 
 # VPC Endpointの停止処理
-stop_vpc_endpoints() {
-    log "Stopping VPC Endpoints by removing availability zones..."
-    
-    for ENDPOINT in "${VPC_ENDPOINT_IDS[@]}"; do
-        log "Processing VPC Endpoint: $ENDPOINT"
-        
-        # エンドポイントの存在確認と詳細情報を取得
-        ENDPOINT_INFO=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids $ENDPOINT \
-            --query "VpcEndpoints[0]" \
-            --output json --no-cli-pager 2>/dev/null)
-        
-        if [ $? -ne 0 ] || [ -z "$ENDPOINT_INFO" ] || [ "$ENDPOINT_INFO" = "null" ]; then
-            log "VPC Endpoint $ENDPOINT not found, skipping"
-            continue
-        fi
-        
-        # 状態を取得（jqの代わりに直接クエリを使用）
-        STATUS=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids $ENDPOINT \
-            --query "VpcEndpoints[0].State" \
-            --output text --no-cli-pager 2>/dev/null || echo "NotFound")
-        
-        VPC_ID=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids $ENDPOINT \
-            --query "VpcEndpoints[0].VpcId" \
-            --output text --no-cli-pager 2>/dev/null || echo "NotFound")
-        
-        ENDPOINT_TYPE=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids $ENDPOINT \
-            --query "VpcEndpoints[0].VpcEndpointType" \
-            --output text --no-cli-pager 2>/dev/null || echo "NotFound")
-        
-        log "VPC Endpoint $ENDPOINT details:"
-        log "  Status: $STATUS"
-        log "  VPC ID: $VPC_ID"
-        log "  Type: $ENDPOINT_TYPE"
-        
-        # Gateway型の場合はサブネット操作不要
-        if [ "$ENDPOINT_TYPE" = "Gateway" ]; then
-            log "Gateway type endpoint $ENDPOINT - no subnet modification needed"
-            continue
-        fi
-        
-        # Interface型でavailable状態でない場合は待機
-        if [ "$STATUS" != "available" ]; then
-            log "VPC Endpoint $ENDPOINT is not available (status: $STATUS), waiting for it to become available..."
-            
-            # available状態になるまで待機
-            local max_wait=300
-            local wait_time=0
-            while [ $wait_time -lt $max_wait ] && [ "$STATUS" != "available" ]; do
-                sleep 10
-                wait_time=$((wait_time + 10))
-                STATUS=$(aws ec2 describe-vpc-endpoints \
-                    --vpc-endpoint-ids $ENDPOINT \
-                    --query "VpcEndpoints[0].State" \
-                    --output text --no-cli-pager 2>/dev/null || echo "NotFound")
-                log "Waiting for $ENDPOINT to become available... (status: $STATUS)"
-            done
-            
-            if [ "$STATUS" != "available" ]; then
-                log "WARNING: VPC Endpoint $ENDPOINT did not become available within timeout, skipping"
-                continue
-            fi
-        fi
-        
-        # 現在のサブネットを取得
-        CURRENT_SUBNETS=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids $ENDPOINT \
-            --query "VpcEndpoints[0].SubnetIds" \
-            --output text --no-cli-pager)
-        
-        log "Current Subnet IDs for $ENDPOINT: $CURRENT_SUBNETS"
-        
-        # サブネット配列に変換
-        SUBNET_ARRAY=($CURRENT_SUBNETS)
-        SUBNET_COUNT=${#SUBNET_ARRAY[@]}
-        
-        log "Current subnet count: $SUBNET_COUNT"
-        
-        # 停止処理では、すべてのサブネットを削除してエンドポイントを実質停止
-        if [ $SUBNET_COUNT -gt 0 ]; then
-            log "Endpoint $ENDPOINT has $SUBNET_COUNT subnets, removing all subnets to stop the endpoint"
-            
-            # すべてのサブネットを削除
-            for SUBNET in "${SUBNET_ARRAY[@]}"; do
-                log "Removing Subnet $SUBNET from endpoint $ENDPOINT"
-                REMOVE_RESULT=$(aws ec2 modify-vpc-endpoint \
-                    --vpc-endpoint-id $ENDPOINT \
-                    --remove-subnet-ids $SUBNET \
-                    --no-cli-pager \
-                    --output json 2>&1)
-                
-                if [ $? -eq 0 ]; then
-                    log "Successfully removed Subnet $SUBNET from endpoint $ENDPOINT"
-                    # 変更が完了するまで待機
-                    wait_for_vpc_endpoint_modification $ENDPOINT
-                else
-                    log "ERROR: Failed to remove Subnet $SUBNET from endpoint $ENDPOINT"
-                    log "Error details: $REMOVE_RESULT"
-                fi
-            done
-        else
-            log "Endpoint $ENDPOINT already has 0 subnets - already stopped"
-        fi
-        
-        # 最終確認
-        FINAL_SUBNETS=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids $ENDPOINT \
-            --query "VpcEndpoints[0].SubnetIds" \
-            --output text --no-cli-pager)
-        FINAL_COUNT=$(echo "$FINAL_SUBNETS" | wc -w)
-        log "Final subnet count for $ENDPOINT: $FINAL_COUNT"
-    done
-    
-    log "VPC Endpoints processing completed"
-}
+# stop_vpc_endpoints() {
+#     log "Stopping VPC Endpoints by removing availability zones..."
+#     
+#     for ENDPOINT in "${VPC_ENDPOINT_IDS[@]}"; do
+#         log "Processing VPC Endpoint: $ENDPOINT"
+#         
+#         # エンドポイントの存在確認と詳細情報を取得
+#         ENDPOINT_INFO=$(aws ec2 describe-vpc-endpoints \
+#             --vpc-endpoint-ids $ENDPOINT \
+#             --query "VpcEndpoints[0]" \
+#             --output json --no-cli-pager 2>/dev/null)
+#         
+#         if [ $? -ne 0 ] || [ -z "$ENDPOINT_INFO" ] || [ "$ENDPOINT_INFO" = "null" ]; then
+#             log "VPC Endpoint $ENDPOINT not found, skipping"
+#             continue
+#         fi
+#         
+#         # 状態を取得（jqの代わりに直接クエリを使用）
+#         STATUS=$(aws ec2 describe-vpc-endpoints \
+#             --vpc-endpoint-ids $ENDPOINT \
+#             --query "VpcEndpoints[0].State" \
+#             --output text --no-cli-pager 2>/dev/null || echo "NotFound")
+#         
+#         VPC_ID=$(aws ec2 describe-vpc-endpoints \
+#             --vpc-endpoint-ids $ENDPOINT \
+#             --query "VpcEndpoints[0].VpcId" \
+#             --output text --no-cli-pager 2>/dev/null || echo "NotFound")
+#         
+#         ENDPOINT_TYPE=$(aws ec2 describe-vpc-endpoints \
+#             --vpc-endpoint-ids $ENDPOINT \
+#             --query "VpcEndpoints[0].VpcEndpointType" \
+#             --output text --no-cli-pager 2>/dev/null || echo "NotFound")
+#         
+#         log "VPC Endpoint $ENDPOINT details:"
+#         log "  Status: $STATUS"
+#         log "  VPC ID: $VPC_ID"
+#         log "  Type: $ENDPOINT_TYPE"
+#         
+#         # Gateway型の場合はサブネット操作不要
+#         if [ "$ENDPOINT_TYPE" = "Gateway" ]; then
+#             log "Gateway type endpoint $ENDPOINT - no subnet modification needed"
+#             continue
+#         fi
+#         
+#         # Interface型でavailable状態でない場合は待機
+#         if [ "$STATUS" != "available" ]; then
+#             log "VPC Endpoint $ENDPOINT is not available (status: $STATUS), waiting for it to become available..."
+#             
+#             # available状態になるまで待機
+#             local max_wait=300
+#             local wait_time=0
+#             while [ $wait_time -lt $max_wait ] && [ "$STATUS" != "available" ]; do
+#                 sleep 10
+#                 wait_time=$((wait_time + 10))
+#                 STATUS=$(aws ec2 describe-vpc-endpoints \
+#                     --vpc-endpoint-ids $ENDPOINT \
+#                     --query "VpcEndpoints[0].State" \
+#                     --output text --no-cli-pager 2>/dev/null || echo "NotFound")
+#                 log "Waiting for $ENDPOINT to become available... (status: $STATUS)"
+#             done
+#             
+#             if [ "$STATUS" != "available" ]; then
+#                 log "WARNING: VPC Endpoint $ENDPOINT did not become available within timeout, skipping"
+#                 continue
+#             fi
+#         fi
+#         
+#         # 現在のサブネットを取得
+#         CURRENT_SUBNETS=$(aws ec2 describe-vpc-endpoints \
+#             --vpc-endpoint-ids $ENDPOINT \
+#             --query "VpcEndpoints[0].SubnetIds" \
+#             --output text --no-cli-pager)
+#         
+#         log "Current Subnet IDs for $ENDPOINT: $CURRENT_SUBNETS"
+#         
+#         # サブネット配列に変換
+#         SUBNET_ARRAY=($CURRENT_SUBNETS)
+#         SUBNET_COUNT=${#SUBNET_ARRAY[@]}
+#         
+#         log "Current subnet count: $SUBNET_COUNT"
+#         
+#         # 停止処理では、すべてのサブネットを削除してエンドポイントを実質停止
+#         if [ $SUBNET_COUNT -gt 0 ]; then
+#             log "Endpoint $ENDPOINT has $SUBNET_COUNT subnets, removing all subnets to stop the endpoint"
+#             
+#             # すべてのサブネットを削除
+#             for SUBNET in "${SUBNET_ARRAY[@]}"; do
+#                 log "Removing Subnet $SUBNET from endpoint $ENDPOINT"
+#                 REMOVE_RESULT=$(aws ec2 modify-vpc-endpoint \
+#                     --vpc-endpoint-id $ENDPOINT \
+#                     --remove-subnet-ids $SUBNET \
+#                     --no-cli-pager \
+#                     --output json 2>&1)
+#                 
+#                 if [ $? -eq 0 ]; then
+#                     log "Successfully removed Subnet $SUBNET from endpoint $ENDPOINT"
+#                     # 変更が完了するまで待機
+#                     wait_for_vpc_endpoint_modification $ENDPOINT
+#                 else
+#                     log "ERROR: Failed to remove Subnet $SUBNET from endpoint $ENDPOINT"
+#                     log "Error details: $REMOVE_RESULT"
+#                 fi
+#             done
+#         else
+#             log "Endpoint $ENDPOINT already has 0 subnets - already stopped"
+#         fi
+#         
+#         # 最終確認
+#         FINAL_SUBNETS=$(aws ec2 describe-vpc-endpoints \
+#             --vpc-endpoint-ids $ENDPOINT \
+#             --query "VpcEndpoints[0].SubnetIds" \
+#             --output text --no-cli-pager)
+#         FINAL_COUNT=$(echo "$FINAL_SUBNETS" | wc -w)
+#         log "Final subnet count for $ENDPOINT: $FINAL_COUNT"
+#     done
+#     
+#     log "VPC Endpoints processing completed"
+# }
 
 # VPC Endpointのアベイラビリティゾーンを復元
-start_vpc_endpoints() {
-    log "Starting VPC Endpoints by restoring availability zones..."
-    
-    for ENDPOINT in "${VPC_ENDPOINT_IDS[@]}"; do
-        log "Processing VPC Endpoint: $ENDPOINT"
-        
-        # エンドポイントの存在確認と詳細情報を取得
-        ENDPOINT_INFO=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids $ENDPOINT \
-            --query "VpcEndpoints[0]" \
-            --output json --no-cli-pager 2>/dev/null)
-        
-        if [ $? -ne 0 ] || [ -z "$ENDPOINT_INFO" ] || [ "$ENDPOINT_INFO" = "null" ]; then
-            log "VPC Endpoint $ENDPOINT not found, skipping"
-            continue
-        fi
-        
-        # 状態を取得（jqの代わりに直接クエリを使用）
-        STATUS=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids $ENDPOINT \
-            --query "VpcEndpoints[0].State" \
-            --output text --no-cli-pager 2>/dev/null || echo "NotFound")
-        
-        VPC_ID=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids $ENDPOINT \
-            --query "VpcEndpoints[0].VpcId" \
-            --output text --no-cli-pager 2>/dev/null || echo "NotFound")
-        
-        ENDPOINT_TYPE=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids $ENDPOINT \
-            --query "VpcEndpoints[0].VpcEndpointType" \
-            --output text --no-cli-pager 2>/dev/null || echo "NotFound")
-        
-        log "VPC Endpoint $ENDPOINT details:"
-        log "  Status: $STATUS"
-        log "  VPC ID: $VPC_ID"
-        log "  Type: $ENDPOINT_TYPE"
-        
-        # Gateway型の場合はサブネット操作不要
-        if [ "$ENDPOINT_TYPE" = "Gateway" ]; then
-            log "Gateway type endpoint $ENDPOINT - no subnet modification needed"
-            continue
-        fi
-        
-        # Interface型でavailable状態でない場合は待機
-        if [ "$STATUS" != "available" ]; then
-            log "VPC Endpoint $ENDPOINT is not available (status: $STATUS), waiting for it to become available..."
-            
-            # available状態になるまで待機
-            local max_wait=300
-            local wait_time=0
-            while [ $wait_time -lt $max_wait ] && [ "$STATUS" != "available" ]; do
-                sleep 10
-                wait_time=$((wait_time + 10))
-                STATUS=$(aws ec2 describe-vpc-endpoints \
-                    --vpc-endpoint-ids $ENDPOINT \
-                    --query "VpcEndpoints[0].State" \
-                    --output text --no-cli-pager 2>/dev/null || echo "NotFound")
-                log "Waiting for $ENDPOINT to become available... (status: $STATUS)"
-            done
-            
-            if [ "$STATUS" != "available" ]; then
-                log "WARNING: VPC Endpoint $ENDPOINT did not become available within timeout, skipping"
-                continue
-            fi
-        fi
-        
-        # 現在のサブネットを取得
-        CURRENT_SUBNETS=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids $ENDPOINT \
-            --query "VpcEndpoints[0].SubnetIds" \
-            --output text --no-cli-pager)
-        
-        log "Current Subnet IDs for $ENDPOINT: $CURRENT_SUBNETS"
-        
-        # VPCのすべてのサブネットを取得
-        ALL_SUBNETS=$(aws ec2 describe-subnets \
-            --filters "Name=vpc-id,Values=$VPC_ID" \
-            --query "Subnets[].SubnetId" \
-            --output text --no-cli-pager)
-        
-        log "Available Subnets in VPC $VPC_ID: $ALL_SUBNETS"
-        
-        # 現在のサブネット数とVPCの全サブネット数を比較
-        CURRENT_ARRAY=($CURRENT_SUBNETS)
-        ALL_ARRAY=($ALL_SUBNETS)
-        
-        log "Current subnet count: ${#CURRENT_ARRAY[@]}, Total available subnets: ${#ALL_ARRAY[@]}"
-        
-        # 不足しているサブネットを特定（アベイラビリティゾーンを考慮）
-        MISSING_SUBNETS=()
-        USED_AZS=()
-        
-        # 現在使用中のアベイラビリティゾーンを取得
-        for SUBNET in "${CURRENT_ARRAY[@]}"; do
-            if [ -n "$SUBNET" ]; then
-                AZ=$(aws ec2 describe-subnets \
-                    --subnet-ids $SUBNET \
-                    --query "Subnets[0].AvailabilityZone" \
-                    --output text --no-cli-pager 2>/dev/null || echo "")
-                if [ -n "$AZ" ]; then
-                    USED_AZS+=("$AZ")
-                fi
-            fi
-        done
-        
-        log "Currently used AZs: ${USED_AZS[*]}"
-        
-        # 異なるAZのサブネットのみを追加対象にする
-        for SUBNET in "${ALL_ARRAY[@]}"; do
-            if [[ ! " ${CURRENT_ARRAY[@]} " =~ " ${SUBNET} " ]]; then
-                # サブネットのアベイラビリティゾーンを取得
-                AZ=$(aws ec2 describe-subnets \
-                    --subnet-ids $SUBNET \
-                    --query "Subnets[0].AvailabilityZone" \
-                    --output text --no-cli-pager 2>/dev/null || echo "")
-                
-                if [ -n "$AZ" ]; then
-                    # 既に使用されているAZでない場合のみ追加対象にする
-                    if [[ ! " ${USED_AZS[@]} " =~ " ${AZ} " ]]; then
-                        MISSING_SUBNETS+=("$SUBNET")
-                        USED_AZS+=("$AZ")
-                        log "Subnet $SUBNET (AZ: $AZ) will be added"
-                    else
-                        log "Skipping subnet $SUBNET (AZ: $AZ) - AZ already in use"
-                    fi
-                else
-                    log "WARNING: Could not determine AZ for subnet $SUBNET"
-                fi
-            fi
-        done
-        
-        if [ ${#MISSING_SUBNETS[@]} -gt 0 ]; then
-            log "Adding subnets for $ENDPOINT: ${MISSING_SUBNETS[*]}"
-            
-            # 不足しているサブネットを追加
-            for SUBNET in "${MISSING_SUBNETS[@]}"; do
-                log "Adding Subnet $SUBNET to endpoint $ENDPOINT"
-                ADD_RESULT=$(aws ec2 modify-vpc-endpoint \
-                    --vpc-endpoint-id $ENDPOINT \
-                    --add-subnet-ids $SUBNET \
-                    --no-cli-pager \
-                    --output json 2>&1)
-                
-                if [ $? -eq 0 ]; then
-                    log "Successfully added Subnet $SUBNET to endpoint $ENDPOINT"
-                    # 変更が完了するまで待機
-                    wait_for_vpc_endpoint_modification $ENDPOINT
-                else
-                    log "ERROR: Failed to add Subnet $SUBNET to endpoint $ENDPOINT"
-                    log "Error details: $ADD_RESULT"
-                    
-                    # AZ制約エラーの場合は、そのAZをスキップして続行
-                    if [[ "$ADD_RESULT" == *"DuplicateSubnetsInSameZone"* ]]; then
-                        log "AZ constraint error - skipping this subnet and continuing"
-                    fi
-                fi
-            done
-        else
-            log "No missing subnets for endpoint $ENDPOINT - all subnets are already present"
-        fi
-        
-        # 最終確認
-        FINAL_SUBNETS=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids $ENDPOINT \
-            --query "VpcEndpoints[0].SubnetIds" \
-            --output text --no-cli-pager)
-        FINAL_COUNT=$(echo "$FINAL_SUBNETS" | wc -w)
-        log "Final subnet count for $ENDPOINT: $FINAL_COUNT"
-    done
-    
-    log "VPC Endpoints restoration completed"
-}
+# start_vpc_endpoints() {
+#     log "Starting VPC Endpoints by restoring availability zones..."
+#     
+#     for ENDPOINT in "${VPC_ENDPOINT_IDS[@]}"; do
+#         log "Processing VPC Endpoint: $ENDPOINT"
+#         
+#         # エンドポイントの存在確認と詳細情報を取得
+#         ENDPOINT_INFO=$(aws ec2 describe-vpc-endpoints \
+#             --vpc-endpoint-ids $ENDPOINT \
+#             --query "VpcEndpoints[0]" \
+#             --output json --no-cli-pager 2>/dev/null)
+#         
+#         if [ $? -ne 0 ] || [ -z "$ENDPOINT_INFO" ] || [ "$ENDPOINT_INFO" = "null" ]; then
+#             log "VPC Endpoint $ENDPOINT not found, skipping"
+#             continue
+#         fi
+#         
+#         # 状態を取得（jqの代わりに直接クエリを使用）
+#         STATUS=$(aws ec2 describe-vpc-endpoints \
+#             --vpc-endpoint-ids $ENDPOINT \
+#             --query "VpcEndpoints[0].State" \
+#             --output text --no-cli-pager 2>/dev/null || echo "NotFound")
+#         
+#         VPC_ID=$(aws ec2 describe-vpc-endpoints \
+#             --vpc-endpoint-ids $ENDPOINT \
+#             --query "VpcEndpoints[0].VpcId" \
+#             --output text --no-cli-pager 2>/dev/null || echo "NotFound")
+#         
+#         ENDPOINT_TYPE=$(aws ec2 describe-vpc-endpoints \
+#             --vpc-endpoint-ids $ENDPOINT \
+#             --query "VpcEndpoints[0].VpcEndpointType" \
+#             --output text --no-cli-pager 2>/dev/null || echo "NotFound")
+#         
+#         log "VPC Endpoint $ENDPOINT details:"
+#         log "  Status: $STATUS"
+#         log "  VPC ID: $VPC_ID"
+#         log "  Type: $ENDPOINT_TYPE"
+#         
+#         # Gateway型の場合はサブネット操作不要
+#         if [ "$ENDPOINT_TYPE" = "Gateway" ]; then
+#             log "Gateway type endpoint $ENDPOINT - no subnet modification needed"
+#             continue
+#         fi
+#         
+#         # Interface型でavailable状態でない場合は待機
+#         if [ "$STATUS" != "available" ]; then
+#             log "VPC Endpoint $ENDPOINT is not available (status: $STATUS), waiting for it to become available..."
+#             
+#             # available状態になるまで待機
+#             local max_wait=300
+#             local wait_time=0
+#             while [ $wait_time -lt $max_wait ] && [ "$STATUS" != "available" ]; do
+#                 sleep 10
+#                 wait_time=$((wait_time + 10))
+#                 STATUS=$(aws ec2 describe-vpc-endpoints \
+#                     --vpc-endpoint-ids $ENDPOINT \
+#                     --query "VpcEndpoints[0].State" \
+#                     --output text --no-cli-pager 2>/dev/null || echo "NotFound")
+#                 log "Waiting for $ENDPOINT to become available... (status: $STATUS)"
+#             done
+#             
+#             if [ "$STATUS" != "available" ]; then
+#                 log "WARNING: VPC Endpoint $ENDPOINT did not become available within timeout, skipping"
+#                 continue
+#             fi
+#         fi
+#         
+#         # 現在のサブネットを取得
+#         CURRENT_SUBNETS=$(aws ec2 describe-vpc-endpoints \
+#             --vpc-endpoint-ids $ENDPOINT \
+#             --query "VpcEndpoints[0].SubnetIds" \
+#             --output text --no-cli-pager)
+#         
+#         log "Current Subnet IDs for $ENDPOINT: $CURRENT_SUBNETS"
+#         
+#         # VPCのすべてのサブネットを取得
+#         ALL_SUBNETS=$(aws ec2 describe-subnets \
+#             --filters "Name=vpc-id,Values=$VPC_ID" \
+#             --query "Subnets[].SubnetId" \
+#             --output text --no-cli-pager)
+#         
+#         log "Available Subnets in VPC $VPC_ID: $ALL_SUBNETS"
+#         
+#         # 現在のサブネット数とVPCの全サブネット数を比較
+#         CURRENT_ARRAY=($CURRENT_SUBNETS)
+#         ALL_ARRAY=($ALL_SUBNETS)
+#         
+#         log "Current subnet count: ${#CURRENT_ARRAY[@]}, Total available subnets: ${#ALL_ARRAY[@]}"
+#         
+#         # 不足しているサブネットを特定（アベイラビリティゾーンを考慮）
+#         MISSING_SUBNETS=()
+#         USED_AZS=()
+#         
+#         # 現在使用中のアベイラビリティゾーンを取得
+#         for SUBNET in "${CURRENT_ARRAY[@]}"; do
+#             if [ -n "$SUBNET" ]; then
+#                 AZ=$(aws ec2 describe-subnets \
+#                     --subnet-ids $SUBNET \
+#                     --query "Subnets[0].AvailabilityZone" \
+#                     --output text --no-cli-pager 2>/dev/null || echo "")
+#                 if [ -n "$AZ" ]; then
+#                     USED_AZS+=("$AZ")
+#                 fi
+#             fi
+#         done
+#         
+#         log "Currently used AZs: ${USED_AZS[*]}"
+#         
+#         # 異なるAZのサブネットのみを追加対象にする
+#         for SUBNET in "${ALL_ARRAY[@]}"; do
+#             if [[ ! " ${CURRENT_ARRAY[@]} " =~ " ${SUBNET} " ]]; then
+#                 # サブネットのアベイラビリティゾーンを取得
+#                 AZ=$(aws ec2 describe-subnets \
+#                     --subnet-ids $SUBNET \
+#                     --query "Subnets[0].AvailabilityZone" \
+#                     --output text --no-cli-pager 2>/dev/null || echo "")
+#                 
+#                 if [ -n "$AZ" ]; then
+#                     # 既に使用されているAZでない場合のみ追加対象にする
+#                     if [[ ! " ${USED_AZS[@]} " =~ " ${AZ} " ]]; then
+#                         MISSING_SUBNETS+=("$SUBNET")
+#                         USED_AZS+=("$AZ")
+#                         log "Subnet $SUBNET (AZ: $AZ) will be added"
+#                     else
+#                         log "Skipping subnet $SUBNET (AZ: $AZ) - AZ already in use"
+#                     fi
+#                 else
+#                     log "WARNING: Could not determine AZ for subnet $SUBNET"
+#                 fi
+#             fi
+#         done
+#         
+#         if [ ${#MISSING_SUBNETS[@]} -gt 0 ]; then
+#             log "Adding subnets for $ENDPOINT: ${MISSING_SUBNETS[*]}"
+#             
+#             # 不足しているサブネットを追加
+#             for SUBNET in "${MISSING_SUBNETS[@]}"; do
+#                 log "Adding Subnet $SUBNET to endpoint $ENDPOINT"
+#                 ADD_RESULT=$(aws ec2 modify-vpc-endpoint \
+#                     --vpc-endpoint-id $ENDPOINT \
+#                     --add-subnet-ids $SUBNET \
+#                     --no-cli-pager \
+#                     --output json 2>&1)
+#                 
+#                 if [ $? -eq 0 ]; then
+#                     log "Successfully added Subnet $SUBNET to endpoint $ENDPOINT"
+#                     # 変更が完了するまで待機
+#                     wait_for_vpc_endpoint_modification $ENDPOINT
+#                 else
+#                     log "ERROR: Failed to add Subnet $SUBNET to endpoint $ENDPOINT"
+#                     log "Error details: $ADD_RESULT"
+#                     
+#                     # AZ制約エラーの場合は、そのAZをスキップして続行
+#                     if [[ "$ADD_RESULT" == *"DuplicateSubnetsInSameZone"* ]]; then
+#                         log "AZ constraint error - skipping this subnet and continuing"
+#                     fi
+#                 fi
+#             done
+#         else
+#             log "No missing subnets for endpoint $ENDPOINT - all subnets are already present"
+#         fi
+#         
+#         # 最終確認
+#         FINAL_SUBNETS=$(aws ec2 describe-vpc-endpoints \
+#             --vpc-endpoint-ids $ENDPOINT \
+#             --query "VpcEndpoints[0].SubnetIds" \
+#             --output text --no-cli-pager)
+#         FINAL_COUNT=$(echo "$FINAL_SUBNETS" | wc -w)
+#         log "Final subnet count for $ENDPOINT: $FINAL_COUNT"
+#     done
+#     
+#     log "VPC Endpoints restoration completed"
+# }
 
 # リソースの状態確認
 check_status() {
@@ -638,18 +638,18 @@ check_status() {
     log "RDS status: $RDS_STATUS"
     
     # VPC Endpoints status
-    log "VPC Endpoints status:"
-    for ENDPOINT in "${VPC_ENDPOINT_IDS[@]}"; do
-        STATUS=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids $ENDPOINT \
-            --query "VpcEndpoints[0].State" \
-            --output text --no-cli-pager 2>/dev/null || echo "NotFound")
-        SUBNET_COUNT=$(aws ec2 describe-vpc-endpoints \
-            --vpc-endpoint-ids $ENDPOINT \
-            --query "length(VpcEndpoints[0].SubnetIds)" \
-            --output text 2>/dev/null || echo "0")
-        log "  $ENDPOINT: $STATUS (Subnets: $SUBNET_COUNT)"
-    done
+    # log "VPC Endpoints status:"
+    # for ENDPOINT in "${VPC_ENDPOINT_IDS[@]}"; do
+    #     STATUS=$(aws ec2 describe-vpc-endpoints \
+    #         --vpc-endpoint-ids $ENDPOINT \
+    #         --query "VpcEndpoints[0].State" \
+    #         --output text --no-cli-pager 2>/dev/null || echo "NotFound")
+    #     SUBNET_COUNT=$(aws ec2 describe-vpc-endpoints \
+    #         --vpc-endpoint-ids $ENDPOINT \
+    #         --query "length(VpcEndpoints[0].SubnetIds)" \
+    #         --output text 2>/dev/null || echo "0")
+    #     log "  $ENDPOINT: $STATUS (Subnets: $SUBNET_COUNT)"
+    # done
 }
 
 # メイン処理
@@ -673,12 +673,12 @@ main() {
             log "Starting AWS resources shutdown..."
             stop_ecs_service
             stop_rds_instance
-            stop_vpc_endpoints
+            # stop_vpc_endpoints
             log "AWS resources shutdown completed"
             ;;
         "start")
             log "Starting AWS resources startup..."
-            start_vpc_endpoints
+            # start_vpc_endpoints
             start_rds_instance
             start_ecs_service
             log "AWS resources startup completed"

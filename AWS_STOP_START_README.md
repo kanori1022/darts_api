@@ -47,8 +47,8 @@ chmod +x aws-stop-start.sh
 ```bash
 ECS_CLUSTER="darts_api"
 ECS_SERVICE="darts_api_task_definition-service-69mkaqef"
-RDS_INSTANCE="darts-database"
-RDS_ENDPOINT="darts-database.cv0i6mcgq0wu.ap-northeast-1.rds.amazonaws.com"
+RDS_INSTANCE="darts-db"
+RDS_ENDPOINT="darts-db.cv0i6mcgq0wu.ap-northeast-1.rds.amazonaws.com"
 REGION="ap-northeast-1"
 
 # VPC Endpoint IDs
